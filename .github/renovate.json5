@@ -22,16 +22,20 @@
   ],
 
   timezone: 'Europe/Berlin',
-  schedule: ['before 6am on monday'],
+  // Daily rather than weekly: `schedule` gates branch updates too, so a Monday
+  // -only window plus the three-day cooldown pushes a Friday release out by a
+  // full extra week. Grouping, not the schedule, is what keeps the PR count
+  // down.
+  schedule: ['before 6am'],
   prConcurrentLimit: 5,
 
   // The single most effective defence against a compromised npm release. The
   // shai-hulud class of attack -- stolen maintainer token, malicious version
   // published, credentials harvested from postinstall -- is typically caught and
   // yanked within hours. Waiting three days means the registry, not this repo,
-  // absorbs that window. `internalChecksFilter: strict` makes it a real gate:
-  // without it Renovate would still raise the PR and merely annotate it as
-  // pending.
+  // absorbs that window. `internalChecksFilter` is already Renovate's default;
+  // it is written out so a change to that default cannot silently downgrade the
+  // cooldown from a gate to a PR annotation.
   minimumReleaseAge: '3 days',
   internalChecksFilter: 'strict',
 
@@ -52,20 +56,24 @@
 
   vulnerabilityAlerts: {
     enabled: true,
-    // A known-exploited hole outranks the supply-chain cooldown: waiting three
-    // days here would mean sitting on a published fix.
+    // Both restate Renovate's own defaults for this object. They are spelled out
+    // because they are the exemption that matters: a known-exploited hole
+    // outranks the cooldown and the schedule, and a change to either default
+    // would otherwise leave a published fix sitting unproposed.
     minimumReleaseAge: null,
     schedule: ['at any time'],
     labels: ['security'],
   },
-  // Adds OSV as a second vulnerability source, so a CVE that has not yet been
-  // mapped into the GitHub Advisory Database still raises a PR.
+  // Adds OSV as a second vulnerability source alongside the GitHub Advisory
+  // Database. Still flagged experimental upstream and limited to *direct*
+  // dependencies -- the transitive dev CVEs above stay out of its reach, which
+  // is why lockFileMaintenance carries that job.
   osvVulnerabilityAlerts: true,
 
   packageRules: [
     {
       // The package ships zero runtime dependencies, so every npm update here is
-      // tooling. One PR a week beats eight.
+      // tooling. One rolling PR beats eight separate ones.
       matchManagers: ['npm'],
       matchDepTypes: ['devDependencies'],
       groupName: 'dev-dependencies',

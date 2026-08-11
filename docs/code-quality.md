@@ -79,11 +79,14 @@ does not add coverage, it just races Renovate for the same bump.
 Config lives in `.github/renovate.json5`. Three settings there are load-bearing and should not be
 relaxed without a reason written down next to them:
 
-- **`minimumReleaseAge: '3 days'` with `internalChecksFilter: 'strict'`.** A stolen maintainer token
-  and a malicious `postinstall` is the dominant npm attack; those releases are usually yanked within
-  hours. Sitting out three days means the registry absorbs that window instead of this repo.
-  `vulnerabilityAlerts` overrides the cooldown to `null` — a published fix for a known hole should
-  not wait.
+- **`minimumReleaseAge: '3 days'`.** A stolen maintainer token and a malicious `postinstall` is the
+  dominant npm attack; those releases are usually yanked within hours. Sitting out three days means
+  the registry absorbs that window instead of this repo. `internalChecksFilter: 'strict'` — already
+  Renovate's default — is written out beside it so a change to that default cannot quietly turn the
+  cooldown into a PR annotation. `vulnerabilityAlerts` exempts itself from the cooldown: a published
+  fix for a known hole should not wait. The top-level `schedule` is daily, not weekly, because it
+  gates branch updates as well as PR creation, and a weekly window would add up to a full extra week
+  on top of the three days.
 - **`pinDigests` on GitHub Actions.** A version tag is mutable; whoever owns the action's repo can
   repoint `v7` at any commit and it runs on the next push. Both workflows pin to a commit SHA with
   the human-readable version in a trailing comment, which is what Renovate reads to offer upgrades.
