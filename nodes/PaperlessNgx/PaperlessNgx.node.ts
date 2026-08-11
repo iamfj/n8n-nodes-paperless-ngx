@@ -11,7 +11,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import {
 	executeDocument,
 	isDocumentOperation,
@@ -134,13 +134,15 @@ export class PaperlessNgx implements INodeType {
 		const resource = this.getNodeParameter('resource', 0) as string;
 		const operation = this.getNodeParameter('operation', 0) as string;
 		const returnData: INodeExecutionData[] = [];
+		let client: Awaited<ReturnType<typeof createClient>> | undefined;
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				// Inside the loop and inside the try: a malformed credential throws
-				// here, and outside the try it would surface as a raw error instead of
-				// a NodeApiError, bypassing "Continue on Fail" entirely.
-				const client = await createClient(this);
+				// Built inside the try: a malformed credential throws here, and outside
+				// it that would surface as a raw error instead of a NodeApiError,
+				// bypassing "Continue on Fail" entirely. Cached across items so a large
+				// batch decrypts the credential once.
+				client ??= await createClient(this);
 
 				if (resource === 'document' && operation === 'upload') {
 					returnData.push(...(await executeUpload(this, i, client)));
@@ -154,10 +156,10 @@ export class PaperlessNgx implements INodeType {
 					const descriptor = TAXONOMY[resource as keyof typeof TAXONOMY];
 					returnData.push(...(await executeTaxonomy(this, i, client, descriptor, operation)));
 				} else {
-					throw toNodeError(
+					throw new NodeOperationError(
 						this.getNode(),
-						new Error(`The operation "${operation}" is not supported for resource "${resource}"`),
-						i,
+						`The operation "${operation}" is not supported for resource "${resource}"`,
+						{ itemIndex: i },
 					);
 				}
 			} catch (cause) {

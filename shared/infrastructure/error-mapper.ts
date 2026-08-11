@@ -11,6 +11,9 @@ export function toNodeError(
 	error: unknown,
 	itemIndex?: number,
 ): NodeApiError | NodeOperationError {
+	if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+		return error;
+	}
 	if (error instanceof PaperlessError) {
 		// `toJSON()` rather than the error itself: n8n copies this object into the
 		// workflow output, and the raw error's cause carries the request headers.
