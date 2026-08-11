@@ -21,7 +21,11 @@ import { fileNameFromContentDisposition, toBuffer } from './binary';
 export type RequestSpec = {
 	method: IHttpRequestMethods;
 	path: string;
-	qs?: Record<string, unknown>;
+	// A function when the query itself depends on the API version: negotiation is
+	// settled per attempt, so a query built up front would be replayed unchanged
+	// after a 406 — and django-filter drops parameters it does not recognise
+	// instead of rejecting them, which turns a filtered list into every document.
+	qs?: Record<string, unknown> | ((version: ApiVersion) => Record<string, unknown>);
 	body?: unknown;
 	form?: FormData;
 	binary?: boolean;
@@ -111,8 +115,9 @@ export async function createClient(
 			skipSslCertificateValidation,
 		};
 
-		if (spec.qs) {
-			options.qs = compact(spec.qs);
+		const qs = typeof spec.qs === 'function' ? spec.qs(version) : spec.qs;
+		if (qs) {
+			options.qs = compact(qs);
 			// Paperless filters through DRF, which reads repeated keys: `tags=1&tags=2`.
 			// Any other array format is accepted by the server and silently matches
 			// nothing.
