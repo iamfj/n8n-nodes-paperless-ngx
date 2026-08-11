@@ -49,6 +49,17 @@ export async function executeNote(
 	const documentId = ctx.getNodeParameter('documentId', itemIndex) as number;
 	const notes = await client.request<Note[]>(requestFor(ctx, itemIndex, operation, documentId));
 
+	if (operation === 'delete') {
+		// Deleting the only note leaves an empty array, and mapping that would drop
+		// the item from the output entirely; delete reports itself instead.
+		const noteId = ctx.getNodeParameter('noteId', itemIndex) as number;
+		return [
+			{
+				json: { id: noteId, document: documentId, deleted: true },
+				pairedItem: { item: itemIndex },
+			},
+		];
+	}
 	if (!Array.isArray(notes)) {
 		return [{ json: { documentId, notes }, pairedItem: { item: itemIndex } }];
 	}

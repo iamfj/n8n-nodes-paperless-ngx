@@ -285,7 +285,8 @@ export const documentFields: INodeProperties[] = [
 				name: 'archiveSerialNumber',
 				type: 'number',
 				default: 0,
-				description: 'ASN to assign. Must be unique across the archive.',
+				typeOptions: { minValue: 0 },
+				description: 'ASN to assign. Must be unique across the archive; 0 clears it.',
 			},
 			{
 				displayName: 'Content',
@@ -325,7 +326,9 @@ export const documentFields: INodeProperties[] = [
 				name: 'owner',
 				type: 'number',
 				default: 0,
-				description: 'User ID to transfer ownership to',
+				typeOptions: { minValue: 0 },
+				description:
+					'User ID to transfer ownership to. 0 removes the owner, which drops the document’s object-level permissions.',
 			},
 			{
 				displayName: 'Storage Path Name or ID',

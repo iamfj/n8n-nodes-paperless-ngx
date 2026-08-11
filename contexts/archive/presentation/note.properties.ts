@@ -25,6 +25,9 @@ export const noteOperations: INodePropertyOptions[] = [
 	},
 ];
 
+// Get Many carries no Return All / Limit pair, unlike every other one in the
+// node: the notes action is unpaginated upstream and answers with the document's
+// whole array, so there is no page to cap and nothing for a limit to save.
 export const noteFields: INodeProperties[] = [
 	{
 		displayName: 'Document ID',
