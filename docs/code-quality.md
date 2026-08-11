@@ -96,6 +96,10 @@ relaxed without a reason written down next to them:
 - **`npm ci --ignore-scripts` in `publish.yml`.** That job holds `id-token: write` and npm publish
   rights. An install script running there could alter `dist/` *before* the provenance attestation is
   minted, and the attestation would then vouch for the tampered build. CI already installs this way.
+  The `npx @n8n/scan-community-package` step after it is pinned to an exact version for the same
+  reason — a floating `npx` name runs whatever was published minutes ago, install scripts included —
+  and the publish token is written to a `$RUNNER_TEMP` npmrc rather than `~/.npmrc` so it is out of
+  that step's reach.
 
 Renovate's commit subjects are pinned to `chore(deps)` / `ci(deps)` because `commitlint.config.mjs`
 enforces a closed `scope-enum`; the defaults would produce scopes it rejects.
