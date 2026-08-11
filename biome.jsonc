@@ -63,6 +63,28 @@
 			}
 		},
 		{
+			// The layer rule, machine-checked. Domain code must stay runnable and
+			// testable without the n8n runtime; ESLint cannot enforce this because
+			// `n8n-node lint` byte-compares eslint.config.mjs against a frozen
+			// template and rejects any edit.
+			"includes": ["shared/domain/**", "contexts/*/domain/**"],
+			"linter": {
+				"enabled": true,
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"n8n-workflow": "Domain code must not depend on the n8n runtime. Put the adapter in shared/infrastructure/ instead."
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		{
 			// `n8n-node` rewrites package.json through Prettier with only
 			// { parser: 'json' }, so it never sees this repo's config and always
 			// emits 2-space indentation. Matching that here keeps every

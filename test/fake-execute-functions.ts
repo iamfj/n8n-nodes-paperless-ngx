@@ -17,11 +17,13 @@ const defaultNode: INode = {
 	parameters: {},
 };
 
+// Field names mirror PaperlessNgxApi.credentials.ts exactly; the client reads
+// them straight off `getCredentials`, so a drift here would pass silently.
 const defaultCredentials = {
 	baseUrl: 'https://paperless.example.com',
 	apiToken: 'test-token',
 	apiVersion: 'auto',
-	allowUnauthorizedCerts: false,
+	ignoreSslIssues: false,
 };
 
 /**

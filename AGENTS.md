@@ -119,6 +119,15 @@ contexts/<name>/  one bounded context     may import shared/**, NEVER another co
 Contexts are `archive`, `ingestion`, `taxonomy`, `sharing`, `automation`, `access`, `system`.
 If two contexts need the same thing, it belongs in `shared/`, not in an import between them.
 
+The domain rule is machine-checked by Biome's `style/noRestrictedImports`, `import type` included.
+ESLint cannot carry it: `n8n-node lint` byte-compares `eslint.config.mjs` against a frozen template
+and exits 1 on any edit, comments included. Do not try to add rules there.
+
+**Never `throw` from inside a `catch` block** outside `*.node.ts` / `*.credentials.ts`.
+`@n8n/community-nodes/require-node-api-error` flags any throw lexically inside a catch clause, and
+`PaperlessError` is not on its allowlist. Use `.catch()` to transform a rejection. This constrains
+the kernel and every context; rewording the error will not satisfy it.
+
 ### Four hard blockers — any one of these fails n8n Cloud verification
 
 1. **Zero runtime dependencies.** `dependencies` stays empty. Never add `form-data`; n8n's

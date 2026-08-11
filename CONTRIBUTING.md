@@ -52,13 +52,21 @@ bounded context (`archive`, `taxonomy`, `ingestion`, …). Shared plumbing lives
 4. If it is a new resource, wire it into the node's resource list and update the
    README.
 
-Two rules the build enforces, and one it cannot:
+Four rules the build enforces:
 
 - **Zero runtime dependencies.** Everything new is a devDependency.
-- **No `fs`, no `process.env`.** n8n's verification scanner rejects both.
-- **Layer rule:** code under `shared/domain/` must never import `n8n-workflow`.
-  Domain logic stays testable without the n8n runtime. Nothing checks this
-  automatically yet, so reviewers check it by hand.
+- **No `fs`, no `process.env`.** `npm run lint` rejects both, repo-wide.
+- **No install-time lifecycle scripts.** Hence `hooks:install` above.
+- **Layer rule:** code under `shared/domain/` and `contexts/*/domain/` must never
+  import `n8n-workflow`, so domain logic stays testable without the n8n runtime.
+  Enforced by Biome (`style/noRestrictedImports`), including `import type`.
+
+And one the build cannot enforce: **never throw from inside a `catch` block** in
+kernel or context code. `@n8n/community-nodes/require-node-api-error` flags any
+`throw` lexically inside a `catch` in a file that is not `*.node.ts` or
+`*.credentials.ts`, and `PaperlessError` is not on its allowlist. Use `.catch()`
+to transform a rejection instead. Rewording will not satisfy the rule; only
+keeping throws out of catch clauses will.
 
 ## Commits
 
