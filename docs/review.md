@@ -68,7 +68,7 @@ and the slug names the defect rather than the place, so it survives a line shift
 
 ```
 VERDICT: <blocked|changes|clean> — <n> BLOCK, <n> RULE, <n> BUG, <n> NIT; gates <n>/5 ok
-REVIEWED: <sha> — <the range read>
+REVIEWED: round <n> — <sha>, <the range read>
 
 FINDINGS
 <TIER>/<slug>  <path>:<line>  <open|fixed>
@@ -104,7 +104,9 @@ file skimmed. That section is why this protocol never has to claim completeness.
 
 ## Three rounds, then a decision
 
-Round 3 is the last review of a branch. Whatever is still open then becomes an issue or ships — a
+Round 3 is the last review of a branch — the header carries the round number, one higher than the
+previous report's, so round 4 is visible rather than inferred. Whatever is still open then becomes
+an issue or ships — a
 person decides, and only a person can: "ship it with these three open" is not a verdict this
 protocol produces. The round cap is the backstop for the case where the shrinking scope is not
 enough.
