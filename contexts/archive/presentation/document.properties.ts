@@ -294,7 +294,8 @@ export const documentFields: INodeProperties[] = [
 				type: 'string',
 				typeOptions: { rows: 4 },
 				default: '',
-				description: 'The document’s OCR text, which Paperless-ngx indexes for search',
+				description:
+					'The document’s OCR text, which Paperless-ngx indexes for search. Leaving it blank erases the existing text.',
 			},
 			{
 				displayName: 'Correspondent Name or ID',
