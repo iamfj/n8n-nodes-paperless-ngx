@@ -73,16 +73,25 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7
+      # Digest-pinned, not tag-pinned. This job holds `id-token: write` and npm
+      # publish rights, so a repointed action tag here would be able to sign a
+      # tampered tarball with this repo's provenance.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 'lts/*'
           cache: 'npm'
 
       - name: Install dependencies
-        run: 'npm ci'
+        # --ignore-scripts because this is the one job that can sign a release.
+        # A malicious postinstall in any transitive dev dependency would run
+        # before the build, with the ability to alter dist/ -- and the provenance
+        # attestation minted below would then vouch for the tampered output.
+        # Nothing in the release path (lint, build, publish) needs install
+        # scripts; CI runs the same toolchain this way already.
+        run: npm ci --ignore-scripts
 
       - name: Release
         # Publishes to npm with a provenance attestation (requires id-token: write above).

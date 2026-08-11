@@ -83,6 +83,17 @@ docs: explain API version pinning
 The changelog and version bump are generated from these, so the type and scope are
 what a release note reader ends up seeing.
 
+## Dependency updates
+
+Renovate opens them, on a weekly schedule, grouped into one dev-dependency PR. Its
+Dependency Dashboard issue lists everything pending, including updates still inside the
+three-day release-age cooldown that deliberately holds back freshly published versions —
+see `docs/code-quality.md` for why that cooldown exists before you shorten it.
+
+Nothing automerges. Review a bot PR like any other: check the linked changelog, and treat
+a maintainer change or a sudden drop in the OpenSSF Scorecard shown in the PR body as a
+reason to look harder rather than a formality.
+
 ## Comments
 
 See [§Comments and naming in `AGENTS.md`](AGENTS.md#comments-and-naming). The rules are the same
