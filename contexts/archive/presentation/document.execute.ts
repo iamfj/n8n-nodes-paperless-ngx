@@ -112,21 +112,23 @@ async function getMany(
 	const limit = returnAll ? undefined : (ctx.getNodeParameter('limit', itemIndex, 50) as number);
 	const filters = ctx.getNodeParameter('filters', itemIndex, {}) as IDataObject;
 
-	const query = {
-		...documentListQuery(await client.version(), toDocumentFilters(filters)),
-		...fullPermsQuery(filters.includePermissions === true),
-	};
+	const documentFilters = toDocumentFilters(filters);
+	const permsQuery = fullPermsQuery(filters.includePermissions === true);
 
 	const documents = await collect(
 		paginate<IDataObject>((page) =>
 			client.requestPage<IDataObject>({
 				method: 'GET',
 				path: '/api/documents/',
-				qs: {
-					...query,
+				// Built per attempt rather than once: the search filter has different
+				// parameter names on v9 and v10, and the version is only known for
+				// certain by the request that negotiated it.
+				qs: (version) => ({
+					...documentListQuery(version, documentFilters),
+					...permsQuery,
 					page,
 					page_size: limit === undefined ? PAGE_SIZE : Math.min(limit, PAGE_SIZE),
-				},
+				}),
 			}),
 		),
 		limit,

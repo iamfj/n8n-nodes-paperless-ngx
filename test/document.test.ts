@@ -11,7 +11,13 @@ import {
 import { TRUNCATED_OPTION_VALUE } from '../shared/domain/load-options';
 import { createClient } from '../shared/infrastructure/paperless-client';
 import { createFakeExecuteFunctions } from './fake-execute-functions';
-import { documentsPageV10, headersV10 } from './fixtures/paperless';
+import {
+	documentsPageV10,
+	headersNotAcceptable,
+	headersV9,
+	headersV10,
+	versionMismatchError,
+} from './fixtures/paperless';
 
 const ok = (body: unknown, headers: Record<string, string> = headersV10) => ({
 	statusCode: 200,
@@ -188,6 +194,27 @@ describe('document execute', () => {
 		expect(result.map((entry) => entry.json.id)).toEqual([42, 43]);
 		expect(optionsOf(fake.http, 0).qs).toMatchObject({ text: 'invoice', page: 1 });
 		expect(optionsOf(fake.http, 1).qs).toMatchObject({ page: 2 });
+	});
+
+	it('rebuilds the search filter for the version the 406 retry lands on', async () => {
+		const fake = createFakeExecuteFunctions({
+			parameters: { returnAll: false, limit: 1, filters: { search: 'invoice' } },
+		});
+		fake.http
+			.mockResolvedValueOnce({
+				statusCode: 406,
+				headers: headersNotAcceptable,
+				body: versionMismatchError,
+			})
+			.mockResolvedValueOnce(ok(documentsPageV10, headersV9));
+
+		await run(fake, 'getMany');
+
+		// A v10 `text=` replayed against v9 would be dropped by django-filter and
+		// return the whole archive instead of the search hits.
+		expect(optionsOf(fake.http, 0).qs).toMatchObject({ text: 'invoice' });
+		expect(optionsOf(fake.http, 1).qs).toMatchObject({ title_content: 'invoice' });
+		expect(optionsOf(fake.http, 1).qs).not.toHaveProperty('text');
 	});
 
 	it('downloads into the named binary field and keeps the served file name', async () => {
