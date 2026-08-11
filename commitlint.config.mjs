@@ -21,8 +21,8 @@ export default {
 				'ci',
 				'docs',
 				'deps',
-				// Kept for the Dependabot-era history; Renovate is configured to
-				// commit as `chore(deps)` / `ci(deps)` instead.
+				// For hand-written dev-tooling bumps. Renovate never emits it: its
+				// subjects are pinned to `chore(deps)` / `ci(deps)`.
 				'deps-dev',
 			],
 		],
