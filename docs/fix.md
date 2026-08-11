@@ -1,9 +1,7 @@
 # Fix protocol
 
 The counterpart to `docs/review.md`. The review is bounded; without a bound here the fixes become
-the next round's findings, which is measurably what happens: fix commits touching four or more files
-produced a finding in the following round every time, and fix commits that stayed inside the file
-the finding named produced none.
+the next round's findings, and the loop stops shrinking.
 
 - **One commit per finding**, touching only the files the finding names. A finding that cannot be
   fixed inside those files is a new candidate, not a bigger commit.
