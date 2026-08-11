@@ -3,6 +3,7 @@ import type {
 	IExecuteFunctions,
 	IHttpRequestMethods,
 	IHttpRequestOptions,
+	ILoadOptionsFunctions,
 } from 'n8n-workflow';
 import {
 	type ApiVersion,
@@ -73,7 +74,16 @@ function compact(qs: Record<string, unknown>): IDataObject {
 	) as IDataObject;
 }
 
-export async function createClient(ctx: IExecuteFunctions): Promise<PaperlessClient> {
+/**
+ * `ILoadOptionsFunctions` is accepted alongside `IExecuteFunctions` because
+ * dropdown pickers run in that context. Both expose `getCredentials` and
+ * `helpers.httpRequestWithAuthentication`, which is the whole of what the client
+ * touches; the binary helpers, which exist only on the execute context, live in
+ * `binary.ts` and are called only from execute paths.
+ */
+export async function createClient(
+	ctx: IExecuteFunctions | ILoadOptionsFunctions,
+): Promise<PaperlessClient> {
 	const credentials = await ctx.getCredentials(CREDENTIAL_NAME);
 	const baseUrl = normalizeBaseUrl(String(credentials.baseUrl ?? ''));
 	const setting = readVersionSetting(credentials.apiVersion);

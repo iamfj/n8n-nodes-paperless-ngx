@@ -1,4 +1,9 @@
-import type { IExecuteFunctions, INode } from 'n8n-workflow';
+import type {
+	IExecuteFunctions,
+	ILoadOptionsFunctions,
+	INode,
+	INodeExecutionData,
+} from 'n8n-workflow';
 import { vi } from 'vitest';
 
 /** Shape n8n returns when a request is made with `returnFullResponse: true`. */
@@ -28,8 +33,9 @@ const defaultCredentials = {
 
 /**
  * The client's only seam is the `IExecuteFunctions` it is handed, so the fake is
- * that object and nothing more. Only the members the client actually touches are
- * implemented; the cast covers the rest of the interface deliberately.
+ * that object and nothing more. Only the members the client and the contexts
+ * actually touch are implemented; the cast covers the rest of the interface
+ * deliberately.
  *
  * The returned `http` mock is the assertion target: what matters is the options
  * object the client passes to n8n, since that is the whole of our contract.
@@ -39,14 +45,36 @@ export function createFakeExecuteFunctions(
 		credentials?: Record<string, unknown>;
 		node?: Partial<INode>;
 		binaryBuffer?: Buffer;
+		/** Values `getNodeParameter` resolves, keyed exactly as the node names them. */
+		parameters?: Record<string, unknown>;
+		items?: INodeExecutionData[];
+		continueOnFail?: boolean;
 	} = {},
 ) {
 	const http = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 	const node: INode = { ...defaultNode, ...overrides.node };
+	const parameters = overrides.parameters ?? {};
 
 	const ctx = {
 		getNode: () => node,
 		getCredentials: vi.fn(async () => ({ ...defaultCredentials, ...overrides.credentials })),
+		getInputData: vi.fn(() => overrides.items ?? [{ json: {} }]),
+		continueOnFail: vi.fn(() => overrides.continueOnFail ?? false),
+		// n8n throws when a parameter is absent and no fallback was given, and a
+		// context relying on that difference is a bug worth failing the test for.
+		// Only `loadOptions` contexts have these, and the client is now shared with
+		// the dropdown pickers — so the fake stands in for both interfaces.
+		getCurrentNodeParameter: vi.fn((name: string) => parameters[name]),
+		getCurrentNodeParameters: vi.fn(() => parameters),
+		getNodeParameter: vi.fn((name: string, _itemIndex: number, fallback?: unknown) => {
+			if (name in parameters) {
+				return parameters[name];
+			}
+			if (fallback !== undefined) {
+				return fallback;
+			}
+			throw new Error(`fake getNodeParameter: "${name}" was not provided and has no fallback`);
+		}),
 		helpers: {
 			httpRequestWithAuthentication: http,
 			getBinaryDataBuffer: vi.fn(async () => overrides.binaryBuffer ?? Buffer.from('%PDF-1.7')),
@@ -57,7 +85,7 @@ export function createFakeExecuteFunctions(
 				mimeType: 'application/pdf',
 			})),
 		},
-	} as unknown as IExecuteFunctions;
+	} as unknown as IExecuteFunctions & ILoadOptionsFunctions;
 
 	return { ctx, http };
 }

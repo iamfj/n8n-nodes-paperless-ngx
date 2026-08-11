@@ -1,4 +1,9 @@
-import { fullPermsQuery, toSetPermissions } from '../shared/domain/permissions';
+import {
+	fullPermsQuery,
+	parseIdList,
+	toPermissionsPatch,
+	toSetPermissions,
+} from '../shared/domain/permissions';
 
 describe('permissions', () => {
 	it('omits the arm the caller omitted, since an omitted arm means unchanged', () => {
@@ -38,5 +43,34 @@ describe('permissions', () => {
 	it('requests full permissions only when asked', () => {
 		expect(fullPermsQuery(true)).toEqual({ full_perms: 'true' });
 		expect(fullPermsQuery(false)).toEqual({});
+	});
+});
+
+describe('parseIdList', () => {
+	it('reads a comma-separated list, tolerating the spaces people type', () => {
+		expect(parseIdList('1, 2,3')).toEqual([1, 2, 3]);
+	});
+
+	it('yields nothing for an empty field, which must not become an empty arm', () => {
+		expect(parseIdList('')).toBeUndefined();
+		expect(parseIdList('  ,  ')).toBeUndefined();
+		expect(parseIdList(undefined)).toBeUndefined();
+	});
+
+	it('drops entries that are not IDs instead of sending NaN', () => {
+		expect(parseIdList('1,abc,3')).toEqual([1, 3]);
+	});
+});
+
+describe('toPermissionsPatch', () => {
+	it('builds only the arms and sub-keys the user filled in', () => {
+		expect(toPermissionsPatch({ viewUsers: '1,2', changeGroups: '7' })).toEqual({
+			view: { users: [1, 2] },
+			change: { groups: [7] },
+		});
+	});
+
+	it('yields nothing at all when every field is blank, so the update omits set_permissions', () => {
+		expect(toPermissionsPatch({ viewUsers: '', changeUsers: '' })).toBeUndefined();
 	});
 });
