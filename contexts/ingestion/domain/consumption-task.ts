@@ -27,7 +27,7 @@ const STATUSES: readonly ConsumptionStatus[] = [
 	'revoked',
 ];
 
-export const TERMINAL_STATUSES: readonly ConsumptionStatus[] = ['success', 'failure', 'revoked'];
+const TERMINAL_STATUSES: readonly ConsumptionStatus[] = ['success', 'failure', 'revoked'];
 
 export function isTerminal(status: ConsumptionStatus): boolean {
 	return TERMINAL_STATUSES.includes(status);
