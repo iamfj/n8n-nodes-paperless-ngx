@@ -1,8 +1,10 @@
 // Renovate over Dependabot: this repo publishes to npm with a provenance
-// attestation, which makes the dependency pipeline itself a target. The two
-// controls that matter most against a compromised release -- a release-age
-// cooldown before an update is even proposed, and digest-pinned GitHub Actions
-// that stay maintained -- are things Dependabot cannot express at all.
+// attestation, which makes the dependency pipeline itself a target. Dependabot
+// covers the basics -- it has had a `cooldown` setting since 2025 and has always
+// kept SHA-pinned actions current from their version comment. What it does not
+// give is the rest of this file: an OpenSSF Scorecard in every PR body,
+// `lockFileMaintenance` for transitive dev CVEs no direct bump ever reaches, and
+// a dependency dashboard listing what is being held back and why.
 //
 // Dependabot alerts stay ON at the repo level. They are the detector Renovate's
 // `vulnerabilityAlerts` consumes; only Dependabot's PR-opening halves are off.
@@ -93,9 +95,11 @@
     },
     {
       // The CLI's major version is tied to the node API and to the provenance
-      // support publish.yml depends on.
+      // support publish.yml depends on. Minor is listed too because the package
+      // is still 0.x, where 0.23 -> 0.24 carries exactly those breaks; drop it
+      // once it reaches 1.0.
       matchPackageNames: ['@n8n/node-cli'],
-      matchUpdateTypes: ['major'],
+      matchUpdateTypes: ['major', 'minor'],
       enabled: false,
     },
     {
