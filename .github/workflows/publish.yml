@@ -108,10 +108,12 @@ jobs:
         #
         # NPM_CONFIG_USERCONFIG redirects that write away from `~/.npmrc`, which
         # every later npm and npx invocation in this job would otherwise read.
-        # A shell variable does not outlive the step, so the scanner below runs
-        # without the publish token in reach.
+        # The variable does not outlive the step, but the file would -- and the
+        # scanner step below runs third-party code on the same runner -- so the
+        # trap deletes it however this step exits.
         run: |
           export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/publish.npmrc"
+          trap 'rm -f "$NPM_CONFIG_USERCONFIG"' EXIT
           if [ -n "$NPM_TOKEN" ]; then
             npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
           fi
@@ -138,12 +140,15 @@ jobs:
         # that in fact succeeded.
         #
         # The scanner is pinned: `npx --yes` on a floating name fetches and runs
-        # whatever was published minutes ago, install scripts included, in the
-        # one job that can sign a release — the same path `--ignore-scripts`
-        # closes above. Renovate keeps the pin current via the comment below.
+        # whatever was published minutes ago, in the one job that can sign a
+        # release. The pin buys the three-day cooldown on the scanner itself --
+        # Renovate keeps it current via the comment below. It does not stop
+        # install scripts, and the scanner's own dependencies still resolve from
+        # floating ranges at this moment, so ignore-scripts is set as well.
         env:
           # renovate: datasource=npm depName=@n8n/scan-community-package
           SCANNER_VERSION: 0.32.0
+          NPM_CONFIG_IGNORE_SCRIPTS: 'true'
         run: |
           PKG="@iamfj/n8n-nodes-paperless-ngx@${GITHUB_REF_NAME}"
           for attempt in 1 2 3 4 5; do
