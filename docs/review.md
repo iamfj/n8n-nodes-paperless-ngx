@@ -47,7 +47,7 @@ drop; matching two is the higher one. The tier choice is the halting decision â€
 | Tier | Means |
 |---|---|
 | `BLOCK` | A runtime dependency, `fs`, `process.env`, a lifecycle script, a hardcoded secret, or a credential value reaching a log, error or node output. Cloud rejects the package, or a token leaks. |
-| `RULE` | A version literal where `supports()` belongs; HTTP in a `.node.ts`; a barrel file; an `I`-prefixed interface; a `Helper`/`Manager`/`Util` name; Zod. The repo pays twice for a decision it already made. |
+| `RULE` | A version literal where `supports()` belongs; HTTP in a `.node.ts`; anything on `AGENTS.md`'s "Rejected by decision" list except its last line â€” barrel files, `I`-prefixed interfaces, `Helper`/`Manager`/`Util` names, Zod, repository interfaces and ports, domain events, CQRS, `Result<T, E>`, an application service wrapping a single call. The repo pays twice for a decision it already made. |
 | `BUG` | Wrong at runtime: a non-idempotent request replayed, an unbounded page walk, a response shape guessed rather than read off the upstream serializer. A self-hosted user hits it and cannot tell why. |
 | `NIT` | Naming, a comment saying what instead of why, a comment whose why about another system cites no source, a missing test for behaviour already correct. |
 
