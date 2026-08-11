@@ -22,9 +22,8 @@ export type TaxonomyDescriptor = {
 };
 
 export type TaxonomyField = {
-	/** The n8n parameter name; also the Paperless field name unless `apiName` says otherwise. */
+	/** The n8n parameter name, which is also the Paperless field name. */
 	name: string;
-	apiName?: string;
 	displayName: string;
 	description: string;
 	type: 'string' | 'color';
