@@ -37,10 +37,10 @@ function searchQuery(
 }
 
 /**
- * `created__date__*` is a DateFilter upstream, validated by Django's `DateField`,
- * which rejects the full ISO 8601 timestamp an n8n `dateTime` property produces
- * and answers 400. `added__date__*` resolves to a DateTimeFilter and takes the
- * timestamp as it comes.
+ * `created` and the `created__date__*` filters are validated by Django's
+ * `DateField`, which rejects the full ISO 8601 timestamp an n8n `dateTime`
+ * property produces and answers 400. `added__date__*` resolves to a
+ * DateTimeFilter and takes the timestamp as it comes.
  */
 function datePart(value: string | undefined): string | undefined {
 	return value?.slice(0, 10);
@@ -113,7 +113,7 @@ export function documentPatchBody(patch: DocumentPatch): Record<string, unknown>
 		body.tags = patch.tags;
 	}
 	if (patch.created !== undefined) {
-		body.created = patch.created;
+		body.created = datePart(patch.created);
 	}
 	if (patch.archiveSerialNumber !== undefined) {
 		body.archive_serial_number = patch.archiveSerialNumber;
