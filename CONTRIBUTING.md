@@ -8,7 +8,8 @@ most contributions come from people who hit a missing endpoint in their own setu
 Node 20 or newer.
 
 ```bash
-npm cinpm run hooks:install   # once per clone — see below
+npm ci --ignore-scripts # n8n-workflow pulls in isolated-vm, which nothing here runs
+npm run hooks:install   # once per clone — see below
 npm run dev             # runs n8n with this node linked, hot-reloading on change
 ```
 
@@ -18,7 +19,8 @@ and other install-time lifecycle scripts in community node packages
 arbitrary code on every consumer's `npm install`). The consequence is that lefthook
 does not wire itself up when you clone: commit-message and pre-commit hooks silently
 do not exist until you run that command once. If commitlint never seems to complain
-about your commit messages, this is why.
+about your commit messages, this is why. Conductor workspaces run it automatically —
+that is what `[scripts].setup` in `.conductor/settings.toml` exists for.
 
 Open the n8n instance it prints, add a Paperless-ngx credential pointing at your
 own server, and drop the node into a workflow. `npm run dev` is the fastest loop —
