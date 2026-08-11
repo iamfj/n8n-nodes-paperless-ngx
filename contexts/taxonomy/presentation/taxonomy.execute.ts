@@ -74,7 +74,11 @@ export async function executeTaxonomy(
 				client.requestPage<IDataObject>({
 					method: 'GET',
 					path: descriptor.endpoint,
-					qs: { name__icontains: nameContains, page, page_size: PAGE_SIZE },
+					qs: {
+						name__icontains: nameContains,
+						page,
+						page_size: limit === undefined ? PAGE_SIZE : Math.min(limit, PAGE_SIZE),
+					},
 				}),
 			),
 			limit,
