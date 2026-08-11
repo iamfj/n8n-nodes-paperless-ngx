@@ -1,0 +1,13 @@
+# Default owner for everything.
+* @iamfj
+
+# Paths where a mistake is expensive and review must not be skipped:
+# publishing identity and provenance, the credential that handles user tokens,
+# the quality gates themselves, and the rules agents follow.
+/.github/workflows/  @iamfj
+/credentials/        @iamfj
+/package.json        @iamfj
+/biome.jsonc         @iamfj
+/eslint.config.mjs   @iamfj
+/lefthook.yml        @iamfj
+/AGENTS.md           @iamfj
