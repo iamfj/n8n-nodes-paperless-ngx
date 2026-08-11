@@ -10,3 +10,7 @@ yarn-error.log*
 
 .DS_Store
 .idea
+
+# Per-developer overrides of the committed agent/workspace settings.
+.claude/settings.local.json
+.conductor/settings.local.toml
