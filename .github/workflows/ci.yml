@@ -41,8 +41,8 @@ jobs:
         # --ignore-scripts skips native compilation. n8n-workflow pulls in
         # isolated-vm transitively, which fails to build against Node 20's V8
         # headers; nothing in lint, typecheck, test or build ever executes it,
-        # and consumers get n8n's own copy because n8n-workflow is a peer
-        # dependency. Compiling it here would only buy a broken matrix leg.
+        # and n8n-workflow is a devDependency that never ships. Compiling it here
+        # would only buy a broken matrix leg.
         run: npm ci --ignore-scripts
 
       - name: Check formatting and lint rules
@@ -62,6 +62,14 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify package contents
+        # Asserts what `npm pack` would publish: the entry points named in the
+        # `n8n` block, the codex file and both icons, that no runtime dependency
+        # crept back in, and that `n8n-workflow` stays an optional peer. Nothing
+        # else in this matrix looks at the tarball, and a packaging defect only
+        # shows up on someone else's instance.
+        run: npm run verify:package
 
 # `@n8n/scan-community-package` is deliberately absent here. Its CLI resolves a
 # package by name from the npm registry and unpacks the published tarball; it has

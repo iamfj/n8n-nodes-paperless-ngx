@@ -93,9 +93,23 @@ jobs:
         # scripts; CI runs the same toolchain this way already.
         run: npm ci --ignore-scripts
 
+      - name: Verify package contents
+        # The release step below runs lint, build and `npm publish` — it never
+        # inspects the tarball. This is the last point at which a missing icon,
+        # a missing codex file or a reintroduced dependency can still be caught
+        # before the version is public and immutable.
+        run: |
+          npm run build
+          npm run verify:package
+
       - name: Release
         # Publishes to npm with a provenance attestation (requires id-token: write above).
         # Lint and build run automatically as part of the release process.
+        #
+        # `n8n-node release` detects GITHUB_ACTIONS and runs a bare `npm publish`
+        # with no --access flag. A scoped package defaults to restricted, so the
+        # first publish of @iamfj/… would fail with 402; package.json's
+        # publishConfig.access is what makes it public.
         #
         # Option A (OIDC): leave NPM_TOKEN unset — the token step is skipped and
         #   npm uses the OIDC exchange instead.
