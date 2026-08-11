@@ -159,6 +159,50 @@ binary data, so `filename*=UTF-8''..%2F..%2Fetc%2Fpasswd` must not come back out
 Uploads return a task UUID, not a document. Polling `/api/tasks/` belongs to the task context — task
 shapes are version-divergent, and the kernel stays ignorant of them.
 
+## Packaging
+
+**`n8n-workflow` is a peer dependency, and it is marked optional.** Both halves are load-bearing and
+they come from opposite directions, so neither survives on its own.
+
+n8n resolves `n8n-workflow` for community nodes itself, by injecting its own module paths into
+`NODE_PATH` and calling `Module._initPaths()` (`packages/cli/src/load-nodes-and-credentials.ts`),
+backed by `ENV NODE_PATH=/usr/local/lib/node_modules` in the Docker image. That is the designed
+contract, and it is the only way our `NodeApiError` can be the same class n8n core checks with
+`instanceof`. A second copy under `~/.n8n/nodes/node_modules` would win — Node's `node_modules`
+walk-up beats `NODE_PATH` — and every `instanceof` in n8n core would then quietly say no.
+
+A bare `"peerDependencies": { "n8n-workflow": "*" }` invites exactly that copy, and it breaks only
+one of the two self-hosted install paths, which is why it survives unnoticed:
+
+- **Settings → Community Nodes is unaffected.** n8n's installer strips dev, optional and peer
+  dependencies out of the package's `package.json` before it runs npm
+  (`packages/cli/src/modules/community-packages/community-packages.service.ts`).
+- **`cd ~/.n8n/nodes && npm i @iamfj/n8n-nodes-paperless-ngx` is plain npm**, and npm ≥ 7
+  auto-installs peers. `"*"` resolves to whatever is newest on the registry and plants a full
+  `n8n-workflow` tree — `isolated-vm` included, the same native build CI needs `--ignore-scripts`
+  for — right where it shadows n8n's own, at a version unpinned relative to the running n8n.
+
+The obvious fix, deleting the block, is not available: `@n8n/community-nodes/valid-peer-dependencies`
+*requires* `"n8n-workflow": "*"` and rejects any other range, and `eslint.config.mjs` is byte-frozen
+against a template so the rule cannot be turned off. n8n's position is that the peer dependency is
+declarative — it records what the package expects to run against, and n8n's own installer never acts
+on it.
+
+`peerDependenciesMeta: { "n8n-workflow": { optional: true } }` satisfies both. npm skips optional
+peers when it auto-installs, so the manual path stops planting the shadowing copy; the lint rule only
+inspects `peerDependencies` and never looks at the meta block. `n8n-workflow` is *also* a
+devDependency at a pinned version, so the repo builds and tests reproducibly against a known copy
+rather than whatever the tree happens to hoist.
+
+`scripts/verify-package.mjs` asserts all of it — the peer range, the optional flag, the empty
+`dependencies`, and the presence of the entry points, codex file and both icons in the tarball. It
+runs in CI after the build and again in the publish workflow, since `n8n-node release` itself never
+inspects the tarball. The optional flag is the part with no other guard: nothing in lint or in the
+type system notices its removal, and the symptom appears only on a stranger's manual install.
+
+`publishConfig.access` is not optional either: in CI, `n8n-node release` runs a bare `npm publish`,
+and a scoped package defaults to `restricted` — the first publish would fail with a 402.
+
 ## Deliberately excluded
 
 Repository interfaces and ports (one implementation, forever). Retry/backoff (self-hosted, not rate
