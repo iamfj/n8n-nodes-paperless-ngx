@@ -67,6 +67,11 @@ NOT REVIEWED
 
 `blocked` on any BLOCK or failing gate, `changes` on any RULE or BUG, otherwise `clean`.
 
+Each finding also goes on the diff itself — inline, at its line, via Conductor's DiffComment tool
+when reviewing in Conductor, or as a review comment when reviewing a PR by hand. The report is the
+summary; the inline comment is what the person fixing it actually reads. Nothing is posted to GitHub
+unless asked.
+
 Empty sections read `none` — except `NOT REVIEWED`, which is mandatory and names what could not be
 checked: no live Paperless instance, an untested API version, the n8n runtime, a skipped gate, a
 file skimmed. That section is why this protocol never has to claim completeness.
