@@ -161,6 +161,18 @@ describe('document execute', () => {
 
 		expect(result).toHaveLength(1);
 		expect(fake.http).toHaveBeenCalledTimes(1);
+		// Asking for a full page of 100 to keep one is work the instance does for
+		// nothing, so a limit below the page size becomes the page size.
+		expect(optionsOf(fake.http).qs).toMatchObject({ page_size: 1 });
+	});
+
+	it('keeps the full page size for a return-all walk', async () => {
+		const fake = createFakeExecuteFunctions({ parameters: { returnAll: true, filters: {} } });
+		fake.http.mockResolvedValue(ok(documentsPageV10));
+
+		await run(fake, 'getMany');
+
+		expect(optionsOf(fake.http).qs).toMatchObject({ page_size: 100 });
 	});
 
 	it('walks pages until the server reports no more', async () => {

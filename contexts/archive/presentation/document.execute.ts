@@ -122,7 +122,11 @@ async function getMany(
 			client.requestPage<IDataObject>({
 				method: 'GET',
 				path: '/api/documents/',
-				qs: { ...query, page, page_size: PAGE_SIZE },
+				qs: {
+					...query,
+					page,
+					page_size: limit === undefined ? PAGE_SIZE : Math.min(limit, PAGE_SIZE),
+				},
 			}),
 		),
 		limit,

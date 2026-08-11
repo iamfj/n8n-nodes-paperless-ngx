@@ -55,6 +55,17 @@ describe('note execute', () => {
 		expect(options.url).toBe('https://paperless.example.com/api/documents/42/notes/');
 		expect(options.qs).toMatchObject({ id: 1 });
 		expect(result).toHaveLength(1);
+		expect(result[0].json).toEqual({ id: 1, document: 42, deleted: true });
+	});
+
+	it('confirms the delete even when it emptied the document’s notes', async () => {
+		const fake = createFakeExecuteFunctions({ parameters: { documentId: 42, noteId: 1 } });
+		fake.http.mockResolvedValue(ok([]));
+
+		const result = await run(fake, 'delete');
+
+		expect(result).toHaveLength(1);
+		expect(result[0].json).toEqual({ id: 1, document: 42, deleted: true });
 	});
 
 	it('does not lose an unexpected body shape', async () => {
