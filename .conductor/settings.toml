@@ -58,8 +58,8 @@ format and stop.
 Do not fix anything during the review -- not a typo, not a one-character change.
 Write no files. Fixing is a separate action with its own bound.
 
-Put findings on the diff with the DiffComment tool. Do not post to GitHub unless
-asked.
+Put findings on the diff with the DiffComment tool, as the Report section of
+docs/review.md requires.
 '''
 
 create_pr = '''
