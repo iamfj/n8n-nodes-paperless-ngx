@@ -35,7 +35,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        # --ignore-scripts skips native compilation. n8n-workflow pulls in
+        # isolated-vm transitively, which fails to build against Node 20's V8
+        # headers; nothing in lint, typecheck, test or build ever executes it,
+        # and consumers get n8n's own copy because n8n-workflow is a peer
+        # dependency. Compiling it here would only buy a broken matrix leg.
+        run: npm ci --ignore-scripts
 
       - name: Check formatting and lint rules
         run: npx biome ci .
