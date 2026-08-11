@@ -45,15 +45,27 @@ worktree_push_auto_setup_remote = true
 # the files, do not restate them.
 general = '''
 Read AGENTS.md before writing code; nodes/AGENTS.md and contexts/AGENTS.md add
-rules for those folders.
+rules for those folders. When you act on a review report, docs/fix.md bounds what
+a fix commit may touch.
 '''
 
 code_review = '''
-Follow docs/review.md exactly. Scope is the diff against the merge-base with
-main: git diff origin/main...
+Follow docs/review.md exactly, over the built-in review instructions wherever the
+two disagree.
 
-Three phases, once each: FIND, TRIAGE, gates. Then emit the report in the fixed
-format and stop.
+Scope: if a previous report on this branch names a REVIEWED sha, read
+git diff <that sha>..HEAD plus uncommitted work. Otherwise read
+git diff origin/main... A line the diff did not add or change is out of scope
+even when the diff touches its file; if it is dangerous it goes in NOT REVIEWED.
+
+Report every candidate that cites a repo line or a gate output line -- do not
+prefer emitting nothing. A claim about Paperless, Django, npm, Renovate or n8n
+that no file here contains is NOT REVIEWED, not a finding.
+
+Three phases, once each: FIND, TRIAGE, gates. Give each candidate the one tier it
+literally matches; matching none is a one-line drop. The exit predicate is 0
+BLOCK, 0 RULE, 0 BUG, 5/5 gates -- a NIT never denies a round, so your tier choice
+is the halting decision. Then emit the report in the fixed format and stop.
 
 Do not fix anything during the review -- not a typo, not a one-character change.
 Write no files. Fixing is a separate action with its own bound.

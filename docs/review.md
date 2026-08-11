@@ -1,14 +1,20 @@
 # Review protocol
 
 One canonical protocol, used by Conductor's Code Review action and by anyone asked to review by
-hand, so both emit the same artefact.
+hand, so both emit the same artefact. Fixing has its own bound in `docs/fix.md`.
 
-**Scope:** the diff against the merge-base with `main` (`git diff origin/main...`), plus whatever a
-finding forces you to open to confirm it.
+**Scope:** the first review of a branch reads `git diff origin/main...`. Every later one reads
+`git diff <REVIEWED sha of the previous report>..HEAD` plus uncommitted work, and the report names
+the sha it reviewed. Each round's input is then strictly smaller than the last, which is the only
+reason the review→fix loop ends. A fix that breaks a line no round has read falls to CI and the
+tests; that net is named at the bottom of this file.
+
+A line the diff did not add or change is **out of scope**, even when the diff touches its file. If
+it is dangerous, it goes in `NOT REVIEWED`.
 
 **The review never fixes anything.** Not a typo, not a rule violation, not even a one-character
 change. This is what makes it terminate: a review that can fix is a review that can re-check, and a
-review that can re-check has no last iteration. Fixing is a separate action with its own bound.
+review that can re-check has no last iteration.
 
 Three phases, run once each, in order. No conditionals, no "until".
 
@@ -18,21 +24,33 @@ Read the diff and report every candidate. No tiers, no filtering, no judgement a
 something is worth mentioning — precision is the next phase's job, and a finder that self-censors
 under-reports. If it looks off, it goes on the list.
 
-Cover at least: the four Cloud blockers, the layer and context import rules, `throw` inside `catch`,
-version literals, credential values reaching a log/error/output, request idempotency, pagination
-bounds, response shapes, tests, naming and comments.
+**A candidate cites a line — of a repo file, or of a gate's output.** A claim about Paperless,
+Django, npm, Renovate or n8n that no file here contains is not a finding; it goes in `NOT REVIEWED`.
+If it matters, it becomes a recorded fixture and a test, which turns it from something re-argued
+every round into something the gates decide once. Two repo files contradicting each other is a
+finding — both lines are citable.
+
+Cover at least: version literals, credential values reaching a log/error/output, request
+idempotency, pagination bounds, response shapes, tests, naming and comments. Not the four Cloud
+blockers, the layer or context import rules, or `throw` inside `catch` — `npm run lint` and Biome
+own those, and phase 3 runs them.
 
 ## 2. TRIAGE
 
-Every candidate is either given a tier or dropped **in writing**. A false positive killed on the
-page costs one line and never comes back; one deleted silently gets re-raised on every future run.
+Every candidate gets the one tier whose definition it **literally** matches. Matching none is a
+drop; matching two is the higher one. The tier choice is the halting decision — exit is 0 BLOCK,
+0 RULE, 0 BUG and 5/5 gates, and **a NIT never denies a round**.
 
 | Tier | Means |
 |---|---|
 | `BLOCK` | A runtime dependency, `fs`, `process.env`, a lifecycle script, a hardcoded secret, or a credential value reaching a log, error or node output. Cloud rejects the package, or a token leaks. |
-| `RULE` | Domain importing `n8n-workflow`; one context importing another; `throw` inside `catch` outside `*.node.ts`/`*.credentials.ts`; a version literal where `supports()` belongs; HTTP in a `.node.ts`; anything on `AGENTS.md`'s "Rejected by decision" list. The repo pays twice for a decision it already made. |
+| `RULE` | A version literal where `supports()` belongs; HTTP in a `.node.ts`; a barrel file; an `I`-prefixed interface; a `Helper`/`Manager`/`Util` name; Zod. The repo pays twice for a decision it already made. |
 | `BUG` | Wrong at runtime: a non-idempotent request replayed, an unbounded page walk, a response shape guessed rather than read off the upstream serializer. A self-hosted user hits it and cannot tell why. |
-| `NIT` | Naming, a comment that says what instead of why, a missing test for behaviour already correct. |
+| `NIT` | Naming, a comment saying what instead of why, a comment whose why about another system cites no source, a missing test for behaviour already correct. |
+
+`AGENTS.md`'s "no abstraction before its third occurrence" and "the default direction is
+subtractive" are guidance for whoever writes the code. They are not predicates a review can settle,
+so they are no tier.
 
 ## 3. GATES
 
@@ -47,6 +65,7 @@ and the slug names the defect rather than the place, so it survives a line shift
 
 ```
 VERDICT: <blocked|changes|clean> — <n> BLOCK, <n> RULE, <n> BUG, <n> NIT; gates <n>/5 ok
+REVIEWED: <sha> — <the range read>
 
 FINDINGS
 <TIER>/<slug>  <path>:<line>  <open|fixed>
@@ -55,7 +74,7 @@ FINDINGS
   fix   <one sentence, or: reported only>
 
 DROPPED
-<slug>  <what it looked like> — <why it is not real>
+<slug>  <one line: what it looked like, why it is not real>
 
 GATES
 lint <ok|FAIL|not run>  typecheck <>  typecheck:test <>  test <>  build <>
@@ -67,6 +86,10 @@ NOT REVIEWED
 
 `blocked` on any BLOCK or failing gate, `changes` on any RULE or BUG, otherwise `clean`.
 
+`DROPPED` is one line each and no verification narrative. A candidate that took a network call, a
+live service or a planted config to settle was not dropped — that work does not persist into the
+next session, so it belongs in `NOT REVIEWED` instead.
+
 Each finding also goes on the diff itself — inline, at its line, via Conductor's DiffComment tool
 when reviewing in Conductor, or as a review comment when reviewing a PR by hand. The report is the
 summary; the inline comment is what the person fixing it actually reads. Nothing is posted to GitHub
@@ -76,10 +99,14 @@ Empty sections read `none` — except `NOT REVIEWED`, which is mandatory and nam
 checked: no live Paperless instance, an untested API version, the n8n runtime, a skipped gate, a
 file skimmed. That section is why this protocol never has to claim completeness.
 
-## What the bound does not buy
+## Three rounds, then a decision
 
-**It is per run, not per diff.** Nothing stops a human invoking review a fourth time, and nothing
-should — only a person decides "ship it with these three open".
+Round 3 is the last review of a branch. Whatever is still open then becomes an issue or ships — a
+person decides, and only a person can: "ship it with these three open" is not a verdict this
+protocol produces. The round cap is the backstop for the case where the shrinking scope is not
+enough.
+
+## What the bound does not buy
 
 Recall is uncheckable from inside: a missed BLOCK and a genuinely clean diff produce the identical
 report. CODEOWNERS, CI and the post-release scanner are the real net.
