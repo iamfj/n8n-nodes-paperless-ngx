@@ -86,7 +86,10 @@ relaxed without a reason written down next to them:
   cooldown into a PR annotation. `vulnerabilityAlerts` exempts itself from the cooldown: a published
   fix for a known hole should not wait. The top-level `schedule` is daily, not weekly, because it
   gates branch updates as well as PR creation, and a weekly window would add up to a full extra week
-  on top of the three days.
+  on top of the three days. The cooldown has one hole: it does not apply to `lockFileMaintenance`,
+  where npm resolves the tree itself, so the monthly lockfile PR — devDependencies only, since the
+  package ships none at runtime — can pull a version published that morning. Read that one as a
+  diff of versions, not as a list of changelogs.
 - **`pinDigests` on GitHub Actions.** A version tag is mutable; whoever owns the action's repo can
   repoint `v7` at any commit and it runs on the next push. Both workflows pin to a commit SHA with
   the human-readable version in a trailing comment, which is what Renovate reads to offer upgrades.

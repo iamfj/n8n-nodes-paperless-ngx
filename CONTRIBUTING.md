@@ -85,10 +85,14 @@ what a release note reader ends up seeing.
 
 ## Dependency updates
 
-Renovate opens them, on a weekly schedule, grouped into one dev-dependency PR. Its
+Renovate opens them daily, grouped into one dev-dependency PR. Its
 Dependency Dashboard issue lists everything pending, including updates still inside the
 three-day release-age cooldown that deliberately holds back freshly published versions —
 see `docs/code-quality.md` for why that cooldown exists before you shorten it.
+
+A separate monthly PR refreshes `package-lock.json`. The cooldown does not reach it — npm
+resolves the tree — so read that one as a diff of versions and look for anything published
+in the last few days.
 
 Nothing automerges. Review a bot PR like any other: check the linked changelog, and treat
 a maintainer change or a sudden drop in the OpenSSF Scorecard shown in the PR body as a

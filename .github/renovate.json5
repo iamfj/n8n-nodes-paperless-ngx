@@ -22,10 +22,10 @@
   ],
 
   timezone: 'Europe/Berlin',
-  // Daily rather than weekly: `schedule` gates branch updates too, so a Monday
-  // -only window plus the three-day cooldown pushes a Friday release out by a
-  // full extra week. Grouping, not the schedule, is what keeps the PR count
-  // down.
+  // Daily rather than weekly: `schedule` gates branch updates too, so a
+  // Monday-only window plus the three-day cooldown pushes a Friday release out
+  // by a full extra week. Grouping, not the schedule, is what keeps the PR
+  // count down.
   schedule: ['before 6am'],
   prConcurrentLimit: 5,
 
@@ -49,6 +49,12 @@
   // Transitive dev CVEs (the undici / nanoid / uuid cluster under release-it)
   // are only reachable through the lockfile; no direct-dependency bump ever
   // proposes them.
+  //
+  // The one hole in the cooldown: `minimumReleaseAge` does not apply to
+  // lockFileMaintenance -- npm resolves the tree, so a transitive version
+  // published that morning can land in this PR. It is monthly and it touches
+  // devDependencies only; read its diff for versions younger than three days
+  // rather than the changelog links.
   lockFileMaintenance: {
     enabled: true,
     schedule: ['before 6am on the first day of the month'],
