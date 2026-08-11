@@ -100,12 +100,18 @@ jobs:
         # Option A (OIDC): leave NPM_TOKEN unset — the token step is skipped and
         #   npm uses the OIDC exchange instead.
         # Option B (token): set NPM_TOKEN in repo secrets — it is written to
-        #   .npmrc here before publishing.
+        #   an .npmrc here before publishing.
         # Note: written as an if-block rather than `[ -n "$NPM_TOKEN" ] && ...`
         # because steps run under `bash -e`, where a failing test as the last
         # command of an AND-list aborts the step — which would break Option A,
         # the very path that is meant to leave NPM_TOKEN unset.
+        #
+        # NPM_CONFIG_USERCONFIG redirects that write away from `~/.npmrc`, which
+        # every later npm and npx invocation in this job would otherwise read.
+        # A shell variable does not outlive the step, so the scanner below runs
+        # without the publish token in reach.
         run: |
+          export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/publish.npmrc"
           if [ -n "$NPM_TOKEN" ]; then
             npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
           fi
@@ -130,10 +136,18 @@ jobs:
         # The retry is not superstition: the registry needs a moment to serve a
         # just-published version, and a 404 here would otherwise fail a release
         # that in fact succeeded.
+        #
+        # The scanner is pinned: `npx --yes` on a floating name fetches and runs
+        # whatever was published minutes ago, install scripts included, in the
+        # one job that can sign a release — the same path `--ignore-scripts`
+        # closes above. Renovate keeps the pin current via the comment below.
+        env:
+          # renovate: datasource=npm depName=@n8n/scan-community-package
+          SCANNER_VERSION: 0.32.0
         run: |
           PKG="@iamfj/n8n-nodes-paperless-ngx@${GITHUB_REF_NAME}"
           for attempt in 1 2 3 4 5; do
-            if npx --yes @n8n/scan-community-package "$PKG"; then
+            if npx --yes "@n8n/scan-community-package@${SCANNER_VERSION}" "$PKG"; then
               exit 0
             fi
             echo "Scan attempt $attempt failed; the registry may not serve $PKG yet."
