@@ -37,11 +37,16 @@
     "typecheck": "tsc --noEmit",
     "typecheck:test": "tsc -p tsconfig.test.json",
     "hooks:install": "lefthook install",
-    "fix": "biome check --write ."
+    "fix": "biome check --write .",
+    "verify:package": "node scripts/verify-package.mjs"
   },
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "engines": {
     "node": ">=20"
   },
@@ -64,11 +69,17 @@
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "9.32.0",
     "lefthook": "^2.1.10",
+    "n8n-workflow": "2.34.2",
     "release-it": "^19.0.4",
     "typescript": "5.9.2",
     "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
+  },
+  "peerDependenciesMeta": {
+    "n8n-workflow": {
+      "optional": true
+    }
   }
 }
