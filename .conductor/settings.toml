@@ -11,8 +11,9 @@ run_mode = "concurrent"
 
 # Cleans up the per-workspace n8n folder the dev script creates. The -n guard is
 # load-bearing: an empty CONDUCTOR_WORKSPACE_NAME would expand to the parent and
-# wipe every other workspace's n8n database.
-archive = '[ -n "$CONDUCTOR_WORKSPACE_NAME" ] && rm -rf "$HOME/.n8n-node-cli/$CONDUCTOR_WORKSPACE_NAME"'
+# wipe every other workspace's n8n database. It is an if-block rather than `&&` so
+# that a skipped cleanup exits 0 instead of reporting a failed archive.
+archive = 'if [ -n "$CONDUCTOR_WORKSPACE_NAME" ]; then rm -rf "$HOME/.n8n-node-cli/$CONDUCTOR_WORKSPACE_NAME"; fi'
 
 [scripts.run.dev]
 # n8n-node dev spawns n8n with { ...process.env }, so N8N_PORT reaches it, and
@@ -45,14 +46,6 @@ worktree_push_auto_setup_remote = true
 general = '''
 Read AGENTS.md before writing code; nodes/AGENTS.md and contexts/AGENTS.md add
 rules for those folders.
-
-Before claiming done: npm run lint, typecheck, typecheck:test, test, build. Run
-them; report what you did not do as clearly as what you did.
-
-Commit as you go with conventional commits -- scopes are fixed by
-commitlint.config.mjs. Never add yourself to authorship metadata.
-
-At most two subagents at once.
 '''
 
 code_review = '''
