@@ -8,6 +8,7 @@ the Paperless REST API to n8n workflows and AI agents. Paperless serves two live
 - Kernel design and its rationale: `docs/architecture/shared-kernel.md`
 - Why the gates are what they are: `docs/code-quality.md`
 - Review protocol and its output format: `docs/review.md`
+- What a fix commit may touch: `docs/fix.md`
 
 `nodes/AGENTS.md` and `contexts/AGENTS.md` carry the rules specific to those folders.
 
@@ -64,7 +65,9 @@ Code documents itself; comments carry what the code cannot.
 
 - Names carry the meaning. `negotiateApiVersion()` needs no comment; `handleVersion()` does.
 - Comment **why**, never **what**. `// v9 omits this field` earns its place; `// loop over docs`
-  does not.
+  does not. A why about another system names where it was read: a file path, a doc URL, a version.
+  An unsourced claim about Paperless, Django, npm or Renovate is deleted, not corrected — checking
+  that a source is cited terminates, checking that a claim is true does not.
 - No JSDoc restating a signature. No banner comments. No commented-out code. No TODO without an
   issue link.
 - Paperless quirks and n8n footguns are exactly what deserves an inline note — they are invisible
