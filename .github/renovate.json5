@@ -53,10 +53,22 @@
   // proposes them.
   //
   // The one hole in the cooldown: `minimumReleaseAge` does not apply to
-  // lockFileMaintenance -- npm resolves the tree, so a transitive version
-  // published that morning can land in this PR. It is monthly and it touches
-  // devDependencies only; read its diff for versions younger than three days
-  // rather than the changelog links.
+  // lockFileMaintenance -- npm resolves the tree, so a version published that
+  // morning can land in this PR. It is monthly; read its diff for versions
+  // younger than three days rather than the changelog links.
+  //
+  // It also has no depName, so no packageRule below can match it -- the
+  // `enabled: false` holds are unreachable from here, and only the range in
+  // package.json bounds what a re-resolve may pick. That is why @n8n/node-cli
+  // carries `^0.43.2` rather than the `*` the scaffold shipped: within a 0.x
+  // caret it can move by patch, which is exactly what its rule allows anyway.
+  //
+  // n8n-workflow cannot be bounded the same way -- `valid-peer-dependencies`
+  // requires the peer to be literally `*`, and `no-overrides-field` closes the
+  // other route -- so this PR can move it in the lockfile. It is harmless: the
+  // package ships `dist` only and declares no runtime dependencies, so that
+  // version reaches typecheck, test and build and nothing else. A bump landing
+  // green is the compatibility signal; a bump landing red is the bug report.
   lockFileMaintenance: {
     enabled: true,
     schedule: ['before 6am on the first day of the month'],
@@ -90,6 +102,9 @@
       // n8n-workflow is a peer dependency: its range declares which n8n versions
       // this node supports. Widening or moving it is a compatibility decision
       // that belongs to a human reading the n8n changelog, not to a bot.
+      // Largely belt-and-braces: n8n's own lint pins the declared range to `*`,
+      // which no update can widen. It is kept so that a future relaxation of
+      // that rule does not silently hand the range to the bot.
       matchPackageNames: ['n8n-workflow'],
       enabled: false,
     },
@@ -97,7 +112,9 @@
       // The CLI's major version is tied to the node API and to the provenance
       // support publish.yml depends on. Minor is listed too because the package
       // is still 0.x, where 0.23 -> 0.24 carries exactly those breaks; drop it
-      // once it reaches 1.0.
+      // once it reaches 1.0. The `^0.43.2` range in package.json is the other
+      // half of this hold -- see lockFileMaintenance above, which this rule
+      // cannot reach.
       matchPackageNames: ['@n8n/node-cli'],
       matchUpdateTypes: ['major', 'minor'],
       enabled: false,
