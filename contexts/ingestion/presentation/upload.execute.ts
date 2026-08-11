@@ -44,8 +44,11 @@ async function pollTask(
 		});
 		const [first] = toTaskList(body);
 		// An empty list right after the upload is normal rather than an error: the
-		// worker has not necessarily written the task row yet.
-		task = first === undefined ? task : normalizeConsumptionTask(version, first);
+		// worker has not necessarily written the task row yet. The ID is compared
+		// rather than trusted: an instance that ignores `task_id` answers with the
+		// whole unacknowledged list, and its newest entry may be someone else's.
+		const candidate = first === undefined ? undefined : normalizeConsumptionTask(version, first);
+		task = candidate?.taskId === taskId ? candidate : task;
 
 		if (task && isTerminal(task.status)) {
 			return task;
@@ -79,7 +82,11 @@ export async function executeUpload(
 			document_type: optionalId(fields.documentType),
 			storage_path: optionalId(fields.storagePath),
 			archive_serial_number: optionalId(fields.archiveSerialNumber),
-			tags: Array.isArray(fields.tags) ? fields.tags : undefined,
+			// The truncation notice a long tag dropdown appends is selectable, so a
+			// non-numeric entry can reach here and Paperless-ngx answers 400.
+			tags: Array.isArray(fields.tags)
+				? fields.tags.map(Number).filter(Number.isInteger)
+				: undefined,
 		},
 		{ document: file },
 	);

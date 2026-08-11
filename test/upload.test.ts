@@ -161,6 +161,34 @@ describe('upload execute', () => {
 		expect(result[0].json).toMatchObject({ taskId: TASK_ID, message: 'It is a duplicate' });
 	});
 
+	it('ignores a task that is not the one this upload created', async () => {
+		// An instance that drops the `task_id` filter answers with the whole
+		// unacknowledged list, whose newest entry belongs to another upload.
+		const fake = upload();
+		fake.http.mockResolvedValueOnce(ok(TASK_ID)).mockResolvedValue(
+			ok({
+				count: 1,
+				next: null,
+				previous: null,
+				results: [{ task_id: 'someone-else', status: 'success', related_document_ids: [99] }],
+			}),
+		);
+
+		await expect(run(fake)).rejects.toThrow('did not finish within 0 seconds');
+	});
+
+	it('drops a tag the truncation notice contributed rather than sending it', async () => {
+		const fake = upload({
+			waitForConsumption: false,
+			additionalFields: { tags: [5, '__truncated__', 8] },
+		});
+		fake.http.mockResolvedValue(ok(TASK_ID));
+
+		await run(fake);
+
+		expect((optionsOf(fake.http).body as FormData).getAll('tags')).toEqual(['5', '8']);
+	});
+
 	it('fails when the upload is accepted but no task ID comes back', async () => {
 		const fake = upload();
 		fake.http.mockResolvedValue(ok({ detail: 'ok' }));
