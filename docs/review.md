@@ -32,8 +32,9 @@ finding — both lines are citable.
 
 Cover at least: version literals, credential values reaching a log/error/output, request
 idempotency, pagination bounds, response shapes, tests, naming and comments. Not the four Cloud
-blockers, the layer or context import rules, or `throw` inside `catch` — `npm run lint` and Biome
-own those, and phase 3 runs them.
+blockers or `throw` inside `catch` — `npm run lint` owns those, and phase 3 runs it. Not the layer
+or context import rules either: Biome owns those, and it runs from `npm run check`
+(`package.json:35`) and from `npx biome ci .` in CI, neither of which is a gate here.
 
 ## 2. TRIAGE
 
