@@ -1,5 +1,3 @@
-export type PageRequest = { page?: number; pageSize?: number };
-
 /** DRF's `StandardPagination` envelope. `all` is v9-only. */
 export type DrfPage<T> = {
 	count: number;
@@ -30,15 +28,4 @@ export function isDrfPage(value: unknown): value is DrfPage<unknown> {
 	}
 	const candidate = value as Partial<DrfPage<unknown>>;
 	return typeof candidate.count === 'number' && Array.isArray(candidate.results);
-}
-
-export function pageQuery(request: PageRequest): { page?: number; page_size?: number } {
-	const query: { page?: number; page_size?: number } = {};
-	if (request.page !== undefined) {
-		query.page = request.page;
-	}
-	if (request.pageSize !== undefined) {
-		query.page_size = request.pageSize;
-	}
-	return query;
 }

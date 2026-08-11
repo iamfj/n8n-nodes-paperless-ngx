@@ -28,10 +28,6 @@ export function isSupported(version: number): version is ApiVersion {
 	return SUPPORTED_API_VERSIONS.includes(version as ApiVersion);
 }
 
-export function downgrade(from: ApiVersion): ApiVersion | undefined {
-	return SUPPORTED_API_VERSIONS.find((candidate) => candidate < from);
-}
-
 export type Capability =
 	| 'individualDocumentEditEndpoints'
 	| 'titleSearch'

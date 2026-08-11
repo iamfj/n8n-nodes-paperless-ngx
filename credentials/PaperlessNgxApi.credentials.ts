@@ -81,6 +81,16 @@ export class PaperlessNgxApi implements ICredentialType {
 			url: '/api/profile/',
 			method: 'GET',
 			skipSslCertificateValidation: '={{$credentials.ignoreSslIssues}}',
+			headers: {
+				// A pinned version is asserted here so a pin this instance does not
+				// serve fails at credential-test time rather than mid-workflow. Auto
+				// deliberately sends no version: the client recovers from a 406 by
+				// retrying lower, and a static header here cannot, so pinning 10 would
+				// fail the test for a v9-only server the node handles perfectly well.
+				// Nothing parses this response body, so the server default is harmless.
+				Accept:
+					'={{$credentials.apiVersion === "auto" ? "application/json" : "application/json; version=" + $credentials.apiVersion}}',
+			},
 		},
 	};
 }

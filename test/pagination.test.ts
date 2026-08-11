@@ -1,4 +1,4 @@
-import { isDrfPage, pageQuery, toPage } from '../shared/domain/pagination';
+import { isDrfPage, toPage } from '../shared/domain/pagination';
 import { documentsPageV9, documentsPageV10, profile } from './fixtures/paperless';
 
 describe('pagination', () => {
@@ -32,11 +32,5 @@ describe('pagination', () => {
 		[[], false],
 	])('recognises %o as a DRF page: %s', (value, expected) => {
 		expect(isDrfPage(value)).toBe(expected);
-	});
-
-	it('maps page requests to Paperless query names and omits what is unset', () => {
-		expect(pageQuery({ page: 2, pageSize: 50 })).toEqual({ page: 2, page_size: 50 });
-		expect(pageQuery({ page: 2 })).toEqual({ page: 2 });
-		expect(pageQuery({})).toEqual({});
 	});
 });

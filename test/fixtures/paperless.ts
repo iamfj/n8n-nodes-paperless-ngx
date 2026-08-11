@@ -11,9 +11,10 @@
  */
 
 /**
- * Paperless echoes the negotiated API version and its own release on every
- * response. Version negotiation reads these, so they belong on every fixture
- * that stands in for a real reply.
+ * `ApiVersionMiddleware` sets `X-Api-Version` and `X-Version` only when the
+ * request authenticated, and the value is `ALLOWED_VERSIONS[-1]` — the server
+ * maximum, not the version the request negotiated. They are diagnostic data
+ * only; nothing in the client decides anything from them.
  */
 export const headersV10 = {
 	'content-type': 'application/json',
@@ -107,3 +108,14 @@ export const detailError = {
 export const versionMismatchError = {
 	detail: 'Invalid version in "Accept" header.',
 };
+
+/**
+ * A 406 carries no version headers: DRF's `initial()` calls
+ * `determine_version()` before `perform_authentication()`, and
+ * `ApiVersionMiddleware` sets the headers only for an authenticated request.
+ */
+export const headersNotAcceptable = { 'content-type': 'application/json' } as const;
+
+/** What a reverse proxy answers with when it, not Paperless, refuses the request. */
+export const proxyHtmlPage =
+	'<!DOCTYPE html><html><head><title>406 Not Acceptable</title></head><body>nginx</body></html>';

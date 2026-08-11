@@ -54,7 +54,7 @@ const KIND_SUMMARY: Record<PaperlessErrorKind, string> = {
 	unknown: 'unexpected response',
 };
 
-function isHtmlBody(body: unknown): boolean {
+export function isHtmlBody(body: unknown): boolean {
 	return typeof body === 'string' && /^\s*<(!doctype|html)/i.test(body);
 }
 
@@ -69,6 +69,13 @@ export function classify(status: number, body: unknown): PaperlessErrorKind {
 	if (status === 0) {
 		return 'network';
 	}
+	// Checked before the status map: a proxy in front of Paperless answers with
+	// its own HTML page under whatever status it likes, 406 included, and that is
+	// a server-side failure rather than anything the workflow or its Accept header
+	// did wrong.
+	if (isHtmlBody(body)) {
+		return 'server';
+	}
 	const known = STATUS_KINDS[status];
 	if (known) {
 		return known;
@@ -76,14 +83,13 @@ export function classify(status: number, body: unknown): PaperlessErrorKind {
 	if (status >= 500) {
 		return 'server';
 	}
-	// A proxy in front of Paperless can answer with its own HTML page under a
-	// status Paperless itself never returns; that is a server-side failure, not
-	// something the workflow did wrong.
-	if (isHtmlBody(body)) {
-		return 'server';
-	}
 	return 'unknown';
 }
+
+// DRF's own envelope keys, which travel alongside field errors on some responses
+// and are not form fields: surfacing `code: ['permission_denied']` as a field
+// error invents a field the request never had.
+const ENVELOPE_KEYS = new Set(['detail', 'code', 'messages']);
 
 export function extractFieldErrors(body: unknown): Record<string, string[]> | undefined {
 	if (typeof body !== 'object' || body === null || Array.isArray(body)) {
@@ -91,7 +97,7 @@ export function extractFieldErrors(body: unknown): Record<string, string[]> | un
 	}
 	const fieldErrors: Record<string, string[]> = {};
 	for (const [field, value] of Object.entries(body as Record<string, unknown>)) {
-		if (field === 'detail') {
+		if (ENVELOPE_KEYS.has(field)) {
 			continue;
 		}
 		if (typeof value === 'string') {
@@ -126,12 +132,6 @@ export function hintFor(
 	kind: PaperlessErrorKind,
 	context: PaperlessErrorContext,
 ): string | undefined {
-	if (kind === 'unsupportedApiVersion') {
-		const requested = context.requestedApiVersion ?? 'unknown';
-		const server = context.serverApiVersion ?? 'unknown';
-		const release = context.serverRelease ? ` (Paperless-ngx ${context.serverRelease})` : '';
-		return `Requested API version ${requested}, but the server reports version ${server}${release}. Set API Version to Auto in the credential, or pin a version this server serves.`;
-	}
 	if (kind === 'network') {
 		const message = causeMessage(context.cause) ?? '';
 		if (/self.signed|self_signed|DEPTH_ZERO|UNABLE_TO_VERIFY|CERT_/i.test(message)) {
@@ -143,6 +143,14 @@ export function hintFor(
 		return 'The server replied with an HTML page instead of JSON. The base URL probably points at the web UI or at a proxy error page rather than at the API.';
 	}
 	switch (kind) {
+		case 'unsupportedApiVersion': {
+			// A 406 never carries a version header: `ApiVersionMiddleware` only sets
+			// one for an authenticated request, and DRF negotiates the version in
+			// `initial()` before it authenticates. The hint therefore has to be
+			// actionable from the requested version alone.
+			const requested = context.requestedApiVersion ?? 'the requested one';
+			return `The server rejected API version ${requested}; a 406 carries no version header, so it cannot say which versions it serves. Set API Version to Auto in the credential to negotiate one, or pin a version this instance supports.`;
+		}
 		case 'unauthorized':
 			return 'Paperless-ngx expects the header "Authorization: Token <token>", not "Bearer". Re-copy the token from My Profile → API Token.';
 		case 'forbidden':
@@ -176,6 +184,8 @@ function buildMessage(
 	return `${context.method} ${context.url}${status}: ${detail}`;
 }
 
+const INSPECT_CUSTOM: unique symbol = Symbol.for('nodejs.util.inspect.custom');
+
 export class PaperlessError extends Error {
 	readonly kind: PaperlessErrorKind;
 	readonly status: number;
@@ -208,12 +218,26 @@ export class PaperlessError extends Error {
 		// The originating error is kept for debugging but hidden from enumeration:
 		// n8n's transport errors carry the full request options, Authorization
 		// header included, and this object gets serialized into workflow output.
+		// An accessor rather than a value, because Node's inspector prints a
+		// non-enumerable `cause` in full but renders an accessor as `[Getter]`.
+		const cause = context.cause;
 		Object.defineProperty(this, 'cause', {
-			value: context.cause,
+			get: () => cause,
 			enumerable: false,
-			writable: false,
 			configurable: true,
 		});
+	}
+
+	// Node's Error inspector special-cases `cause` and prints it even when it is
+	// non-enumerable, so hiding it from enumeration is not enough: any logger
+	// raising the depth (pino, winston, `depth: null`) would print the axios
+	// config, Authorization header included. The same allowlist as toJSON().
+	//
+	// The symbol is looked up rather than imported from `node:util`: it is the
+	// identical registered symbol, and the n8n Cloud lint rule bans the module by
+	// name even though it is a builtin.
+	[INSPECT_CUSTOM](): Record<string, unknown> {
+		return this.toJSON();
 	}
 
 	/** The allowlist that keeps credentials out of serialized workflow output. */

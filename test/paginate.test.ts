@@ -49,6 +49,27 @@ describe('paginate', () => {
 		expect(fetch).toHaveBeenCalledTimes(2);
 	});
 
+	it('stops at the count the server reported, however long it claims hasMore', async () => {
+		const fetch = vi.fn(
+			async (): Promise<Page<number>> => ({ items: [1, 2], count: 4, hasMore: true }),
+		);
+		expect(await collect(paginate(fetch))).toEqual([1, 2, 1, 2]);
+		expect(fetch).toHaveBeenCalledTimes(2);
+	});
+
+	it('gives up against a server whose count is as wrong as its hasMore', async () => {
+		const fetch = vi.fn(
+			async (): Promise<Page<number>> => ({
+				items: [1, 2],
+				count: Number.MAX_SAFE_INTEGER,
+				hasMore: true,
+			}),
+		);
+		const items = await collect(paginate(fetch));
+		expect(fetch).toHaveBeenCalledTimes(1000);
+		expect(items).toHaveLength(2000);
+	});
+
 	it('fetches nothing for a limit of zero', async () => {
 		const fetch = pagesOf(100);
 		expect(await collect(paginate(fetch), 0)).toEqual([]);

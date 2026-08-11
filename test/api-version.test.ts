@@ -1,6 +1,5 @@
 import {
 	acceptHeader,
-	downgrade,
 	isSupported,
 	PREFERRED_API_VERSION,
 	parseApiVersionHeader,
@@ -37,11 +36,6 @@ describe('api version', () => {
 		expect(isSupported(9)).toBe(true);
 		expect(isSupported(8)).toBe(false);
 		expect(isSupported(11)).toBe(false);
-	});
-
-	it('downgrades to the next lower version and then gives up', () => {
-		expect(downgrade(10)).toBe(9);
-		expect(downgrade(9)).toBeUndefined();
 	});
 
 	it('answers capabilities per version, including the v9-only one', () => {

@@ -29,9 +29,25 @@ releases. Omitting it means our response parsing changes silently when a user up
 **`Auto` is optimistic, not exploratory.** It assumes v10 and sends it. There is no probe request —
 a discovery round trip would buy a fact the first real request gives us for free.
 
-**406 is the negotiation signal, and retrying it is safe.** DRF resolves version negotiation in
-`initial()`, before the view body runs, so a 406 guarantees no side effect occurred. That is why we
-retry a `POST` after one, which would otherwise look like an at-least-once bug.
+**A DRF 406 is the negotiation signal, and retrying that one is safe.** DRF resolves version
+negotiation in `initial()`, before the view body runs, so a 406 from Paperless guarantees no side
+effect occurred. That is why we retry a `POST` after one, which would otherwise look like an
+at-least-once bug.
+
+**But not every 406 comes from DRF.** A reverse proxy answers 406 with its own HTML page for
+reasons that have nothing to do with `Accept`, and that response carries no such guarantee —
+replaying it sends an upload twice. A 406 with an HTML body is therefore classified as a `server`
+failure and never retried. `classify()` and `hintFor()` both consult the body before the status for
+exactly this reason.
+
+**A 406 carries no version headers at all.** `ApiVersionMiddleware` sets `X-Api-Version` and
+`X-Version` only when `request.user.is_authenticated`, and DRF's `initial()` calls
+`determine_version()` before `perform_authentication()`. A hint that names "the server version" on a
+406 would render "unknown" every single time; it names the rejected version and the fix instead.
+
+**`X-Api-Version` is not the negotiated version either.** The middleware sets it to
+`ALLOWED_VERSIONS[-1]`, the server *maximum*. It is diagnostic data on the error and nothing more —
+never an input to negotiation or to the cache.
 
 **A pinned version is never silently downgraded.** If the credential says 9, a 406 surfaces as an
 error. Overriding an explicit user choice is worse than failing.
@@ -39,7 +55,15 @@ error. Overriding an explicit user choice is worse than failing.
 **The cache is module-scoped and keyed by base URL.** Supported versions are a property of the
 server, not the token. n8n builds a fresh node instance per execution, so instance state would be
 discarded before reuse — which is also the reason the client is a closure over `ctx`, not a class.
-A later 406 overwrites a cached value, so the cache self-heals with no TTL.
+
+It is written only from a **2xx** response, and only under `auto`. A 401 or a 500 says nothing about
+which versions the server serves, and a pinned version is a user preference, not a server
+capability — caching either one lets one credential mislead every other credential on the same host,
+with no 406 ever arriving to heal it. What is cached is the version *we used successfully*.
+
+**The base URL is normalized to the instance root**, with a trailing `/api` stripped: every path in
+the client already starts with `/api`, and `https://host/api/api/documents/` is the failure users
+create most often. The 404 hint still mentions the suffix, because it costs nothing.
 
 **Contexts branch on capabilities, never on version numbers.**
 
@@ -66,6 +90,11 @@ sending an authenticated request to an unintended origin. We use `next` only as 
 by incrementing against our own normalized base URL. Making the unsafe URL unavailable beats
 documenting that it is unsafe.
 
+`paginate()` is bounded, not open-ended. `hasMore` is a server claim, and a proxy replaying a cached
+page or a filter DRF re-evaluates per request keeps it true forever; the walk therefore also stops
+at the reported `count` and, failing that, at a hard cap of 1000 requests. An unbounded generator
+behind an n8n loop is an infinite workflow, not a slow one.
+
 ## Errors
 
 Paperless returns six distinct failure shapes: `{"detail": …}`, DRF field errors
@@ -77,7 +106,7 @@ A hint is written only where the raw message misleads:
 
 | Status | Why it needs one |
 |---|---|
-| 406 | Must name both requested and server version, or the user cannot act |
+| 406 | Names the rejected version and the fix — the response cannot reveal the server's own |
 | 401 | Paperless says only "Invalid token"; the scheme is `Token`, not `Bearer` — the most common first-run failure |
 | 403 | Object-level permission, not a bad token, so the user stops rotating credentials |
 | 404 | Base URL probably carries an `/api` suffix |
@@ -86,16 +115,46 @@ A hint is written only where the raw message misleads:
 | HTML body | Base URL points at the web UI or a proxy error page |
 | self-signed cert | Point at the credential's SSL toggle; the raw OpenSSL error is unreadable |
 
-No hint for 400 — DRF's field errors are already the best available message.
+No hint for 400 — DRF's field errors are already the best available message. Field errors are read
+only from keys that are actually fields: DRF's envelope keys (`detail`, `code`, `messages`) travel
+in the same object and would otherwise surface as a form field the request never had.
+
+The originating error is kept on `cause` for debugging but is non-enumerable, kept out of `toJSON()`
+— the allowlist n8n copies into workflow output — and replaced by that same allowlist in
+`[util.inspect.custom]`. The last one is not belt and braces: Node's Error inspector special-cases
+`cause` and prints it *even when non-enumerable*, so any logger running at raised depth would print
+the axios request config, `Authorization` header included.
+
+## Permissions
+
+**An omitted arm means "leave unchanged", never "revoke from everyone".** `validate_set_permissions`
+does `del permissions_dict[action]` for an action the payload leaves out, and
+`set_permissions_for_object` iterates only the arms and sub-keys it was actually given. An earlier
+draft of this document claimed Paperless replaces the whole block and had `toSetPermissions()` fill
+every arm with an empty set — under the default `merge=False` that turned "grant view to user 5"
+into "revoke change from every existing editor". The same applies one level down: sending only
+`change.groups` must not touch `change.users`.
+
+So the payload carries exactly what the caller supplied and nothing else, and the arrays are copied
+so a later mutation of the patch cannot reach a request already built.
 
 ## Binary, without a `form-data` dependency
 
 `IHttpRequestOptions.body` accepts a `FormData` instance directly, and Node 18+ provides `FormData`,
-`Blob` and `File` as globals. n8n sets `multipart/form-data` and the boundary itself.
+`Blob` and `File` as globals. The boundary comes from **axios**, not from n8n: n8n's
+`isFormDataInstance()` matches only the `form-data` *package*, so a native `FormData` falls straight
+through to axios's spec-compliant multipart path, which sets `Content-Type` and the boundary. Right
+outcome, but not for the reason it looks like.
 
 Two rules that look arbitrary until they bite: never set `Content-Type` yourself when passing
 `FormData` (it overwrites the generated boundary and the server sees a malformed body), and never
 set `json: true` alongside it (the body gets JSON-serialized).
+
+Downloads take their file name from `Content-Disposition`. RFC 5987 `filename*` wins when it
+decodes, but only then: Paperless sends `filename*=ISO-8859-1''…` for umlauts on some proxies, and a
+lossy transliterated `filename` in the same header beats no name at all. The result is passed
+through n8n's `sanitizeFilename` — the header is remote input and the name reaches the workflow's
+binary data, so `filename*=UTF-8''..%2F..%2Fetc%2Fpasswd` must not come back out as a path.
 
 Uploads return a task UUID, not a document. Polling `/api/tasks/` belongs to the task context — task
 shapes are version-divergent, and the kernel stays ignorant of them.
@@ -106,8 +165,8 @@ Repository interfaces and ports (one implementation, forever). Retry/backoff (se
 limited; n8n already retries at workflow level). Response caching (invalidation costs more than it
 saves). Zod (a runtime dependency, which verification forbids). `Result<T, E>` (`throw` is idiomatic
 and interoperates with n8n's error handling). Barrel files (they defeat the cross-context import
-lint). Basic auth (token auth is strictly better; one auth path is one fewer failure mode).
-`define-resource` is a type signature only until three contexts prove its real shape.
+lint). Basic auth (token auth is strictly better; one auth path is one fewer failure mode). A
+resource factory (`define-resource`) until three contexts prove its real shape.
 
 ## Testing
 

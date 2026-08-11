@@ -1,27 +1,34 @@
 export type PermissionSet = { users: number[]; groups: number[] };
 
+/** The permission block Paperless returns on an owned object when `full_perms` is set. */
 export type Permissions = { view: PermissionSet; change: PermissionSet };
 
 export type PermissionsPatch = { view?: Partial<PermissionSet>; change?: Partial<PermissionSet> };
 
-/** The ownership block Paperless attaches to every owned object. */
-export type Ownership = {
-	owner: number | null;
-	user_can_change?: boolean;
-	permissions?: Permissions;
-};
-
-export const EMPTY_PERMISSION_SET: PermissionSet = Object.freeze({ users: [], groups: [] });
-
-// `set_permissions` replaces the whole block: an arm left out of the payload is
-// not "unchanged", it is "revoked from everyone". Every arm is therefore always
-// written, so a caller patching only `view` cannot silently strip `change`.
-function fill(set?: Partial<PermissionSet>): PermissionSet {
-	return { users: set?.users ?? [], groups: set?.groups ?? [] };
+// `set_permissions_for_object` iterates only the arms and sub-keys present in the
+// payload, and the serializer deletes an omitted action outright, so an arm left
+// out means "leave unchanged". Writing an empty arm is therefore not a harmless
+// default -- with `merge=False` it revokes that permission from everyone.
+function supplied(set: Partial<PermissionSet>): Partial<PermissionSet> {
+	const result: Partial<PermissionSet> = {};
+	if (set.users) {
+		result.users = [...set.users];
+	}
+	if (set.groups) {
+		result.groups = [...set.groups];
+	}
+	return result;
 }
 
-export function toSetPermissions(patch: PermissionsPatch): { set_permissions: Permissions } {
-	return { set_permissions: { view: fill(patch.view), change: fill(patch.change) } };
+export function toSetPermissions(patch: PermissionsPatch): { set_permissions: PermissionsPatch } {
+	const set_permissions: PermissionsPatch = {};
+	if (patch.view) {
+		set_permissions.view = supplied(patch.view);
+	}
+	if (patch.change) {
+		set_permissions.change = supplied(patch.change);
+	}
+	return { set_permissions };
 }
 
 /** Paperless omits the `permissions` block unless `full_perms` is requested. */

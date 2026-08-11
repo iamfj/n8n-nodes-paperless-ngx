@@ -7,6 +7,13 @@ import {
 } from '../shared/domain/paperless-error';
 import { detailError, fieldValidationError, versionMismatchError } from './fixtures/paperless';
 
+// Node's Error inspector prints `cause` even when it is non-enumerable, so the
+// two defences below are what keeps a raised-depth logger from printing the
+// axios request config. `util.inspect` itself cannot be called from here:
+// `node:util`, `process` and `console` are all banned by the frozen n8n Cloud
+// lint config, so the mechanism is asserted instead of its stdout.
+const INSPECT_CUSTOM = Symbol.for('nodejs.util.inspect.custom');
+
 const proxyHtml = '<!DOCTYPE html><html><body>502 Bad Gateway</body></html>';
 
 function contextOf(overrides: Partial<Parameters<typeof hintFor>[1]> = {}) {
@@ -55,6 +62,13 @@ describe('body extraction', () => {
 		});
 	});
 
+	it('ignores every DRF envelope key, which is not a form field', () => {
+		expect(extractFieldErrors({ detail: 'x', code: 'permission_denied' })).toBeUndefined();
+		expect(extractFieldErrors({ messages: ['x'], title: ['Too long.'] })).toEqual({
+			title: ['Too long.'],
+		});
+	});
+
 	it('ignores the detail envelope and non-object bodies', () => {
 		expect(extractFieldErrors(detailError)).toBeUndefined();
 		expect(extractFieldErrors(proxyHtml)).toBeUndefined();
@@ -71,19 +85,20 @@ describe('body extraction', () => {
 });
 
 describe('hints', () => {
-	it('names both versions on a 406, since neither alone is actionable', () => {
+	it('names the requested version on a 406 and never claims to know the server one', () => {
 		const hint = hintFor(
 			'unsupportedApiVersion',
-			contextOf({
-				status: 406,
-				requestedApiVersion: 10,
-				serverApiVersion: 9,
-				serverRelease: '2.14.7',
-			}),
+			contextOf({ status: 406, body: versionMismatchError, requestedApiVersion: 10 }),
 		);
 		expect(hint).toContain('10');
-		expect(hint).toContain('9');
-		expect(hint).toContain('2.14.7');
+		expect(hint).toContain('Auto');
+		// A 406 carries no version header, so a hint must never render one.
+		expect(hint).not.toMatch(/unknown/i);
+	});
+
+	it('explains the proxy page instead of the version when a 406 body is HTML', () => {
+		expect(classify(406, proxyHtml)).toBe('server');
+		expect(hintFor('server', contextOf({ status: 406, body: proxyHtml }))).toMatch(/HTML/);
 	});
 
 	it('corrects the auth scheme on a 401', () => {
@@ -137,18 +152,13 @@ describe('PaperlessError', () => {
 		expect(error.message).toContain('This field may not be blank.');
 	});
 
-	it('carries the negotiated versions of a 406 through to the hint', () => {
+	it('carries the requested version of a 406 through to the hint', () => {
 		const error = new PaperlessError(
-			contextOf({
-				status: 406,
-				body: versionMismatchError,
-				requestedApiVersion: 10,
-				serverApiVersion: 9,
-			}),
+			contextOf({ status: 406, body: versionMismatchError, requestedApiVersion: 10 }),
 		);
 		expect(error.kind).toBe('unsupportedApiVersion');
 		expect(error.requestedApiVersion).toBe(10);
-		expect(error.hint).toContain('9');
+		expect(error.hint).toContain('10');
 	});
 
 	it('keeps the credential out of anything serialized', () => {
@@ -163,5 +173,26 @@ describe('PaperlessError', () => {
 		expect(JSON.stringify(error)).not.toContain('Authorization');
 		expect(JSON.stringify({ error })).not.toContain('super-secret-value');
 		expect(error.toJSON()).toMatchObject({ kind: 'network', status: 0 });
+	});
+
+	it('keeps the credential out of util.inspect, which prints cause even when hidden', () => {
+		const transportFailure = Object.assign(new Error('socket hang up'), {
+			config: { headers: { Authorization: 'Token super-secret-value' } },
+		});
+		const error = new PaperlessError(contextOf({ status: 0, cause: transportFailure }));
+
+		// The inspector reads a data property but renders an accessor as [Getter].
+		const descriptor = Object.getOwnPropertyDescriptor(error, 'cause');
+		expect(descriptor?.value).toBeUndefined();
+		expect(typeof descriptor?.get).toBe('function');
+
+		// And an object with this hook is never formatted by the Error inspector.
+		const hook = (error as unknown as Record<symbol, () => unknown>)[INSPECT_CUSTOM];
+		expect(typeof hook).toBe('function');
+		expect(hook.call(error)).toEqual(error.toJSON());
+		expect(JSON.stringify(hook.call(error))).not.toContain('super-secret-value');
+
+		// The debugging value of the cause is not given up, only its printing.
+		expect(error.cause).toBe(transportFailure);
 	});
 });

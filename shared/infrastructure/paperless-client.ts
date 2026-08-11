@@ -14,7 +14,7 @@ import {
 	SUPPORTED_API_VERSIONS,
 } from '../domain/api-version';
 import { type DrfPage, isDrfPage, type Page, toPage } from '../domain/pagination';
-import { PaperlessError } from '../domain/paperless-error';
+import { isHtmlBody, PaperlessError } from '../domain/paperless-error';
 import { fileNameFromContentDisposition, toBuffer } from './binary';
 
 export type RequestSpec = {
@@ -42,12 +42,18 @@ type FullResponse = { statusCode: number; headers: Record<string, unknown>; body
 // Module scope, keyed by base URL: which versions a server speaks is a property
 // of that server, not of the token or the workflow. n8n builds a fresh node
 // instance per execution, so anything held on an instance would be thrown away
-// before it could be reused. A later 406 overwrites the entry, so the cache
-// heals itself after a server upgrade and needs no TTL.
+// before it could be reused. Only a version that actually succeeded under `auto`
+// is written here -- a pinned version is a user preference, and a failure says
+// nothing about what the server serves.
 const negotiatedVersions = new Map<string, ApiVersion>();
 
 export function normalizeBaseUrl(raw: string): string {
-	return raw.trim().replace(/\/+$/, '');
+	// Every path in this client already starts with `/api`, so a base URL that
+	// carries the suffix would produce `/api/api/...`. Users paste it constantly.
+	return raw
+		.trim()
+		.replace(/\/+$/, '')
+		.replace(/\/api$/i, '');
 }
 
 function readVersionSetting(raw: unknown): ApiVersionSetting {
@@ -136,6 +142,13 @@ export async function createClient(ctx: IExecuteFunctions): Promise<PaperlessCli
 			})) as FullResponse;
 	}
 
+	// A reverse proxy answers 406 with its own HTML page for reasons that have
+	// nothing to do with the Accept header. Replaying that request would send a
+	// document upload twice; only a DRF-shaped 406 is a negotiation signal.
+	function isVersionRejection(response: FullResponse): boolean {
+		return response.statusCode === 406 && !isHtmlBody(response.body);
+	}
+
 	async function execute(spec: RequestSpec): Promise<FullResponse> {
 		const attempts = candidates();
 		let version = attempts[0];
@@ -144,17 +157,16 @@ export async function createClient(ctx: IExecuteFunctions): Promise<PaperlessCli
 		// DRF resolves version negotiation in `initial()`, before the view body runs,
 		// so a 406 proves nothing happened server-side. That is what makes retrying
 		// the very same request — POST included — safe rather than at-least-once.
-		for (let attempt = 1; attempt < attempts.length && response.statusCode === 406; attempt++) {
+		for (let attempt = 1; attempt < attempts.length && isVersionRejection(response); attempt++) {
 			version = attempts[attempt];
 			response = await send(spec, version);
 		}
 
-		const reportedVersion = parseApiVersionHeader(header(response.headers, 'x-api-version'));
-		if (response.statusCode !== 406) {
-			negotiatedVersions.set(
-				baseUrl,
-				reportedVersion !== undefined && isSupported(reportedVersion) ? reportedVersion : version,
-			);
+		// The version we used and got a 2xx for, never the one in `X-Api-Version`:
+		// `ApiVersionMiddleware` sets that header to ALLOWED_VERSIONS[-1], the
+		// server maximum, which is not what the request negotiated.
+		if (setting === 'auto' && response.statusCode >= 200 && response.statusCode < 300) {
+			negotiatedVersions.set(baseUrl, version);
 		}
 
 		if (response.statusCode >= 400) {
@@ -164,7 +176,7 @@ export async function createClient(ctx: IExecuteFunctions): Promise<PaperlessCli
 				status: response.statusCode,
 				body: response.body,
 				requestedApiVersion: version,
-				serverApiVersion: reportedVersion,
+				serverApiVersion: parseApiVersionHeader(header(response.headers, 'x-api-version')),
 				serverRelease: header(response.headers, 'x-version'),
 				retryAfter: header(response.headers, 'retry-after'),
 			});

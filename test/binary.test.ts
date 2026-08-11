@@ -44,6 +44,31 @@ describe('fileNameFromContentDisposition', () => {
 		).toBe('Gebühr.pdf');
 	});
 
+	it('falls back to the plain filename when filename* is not UTF-8', () => {
+		expect(
+			fileNameFromContentDisposition(
+				'attachment; filename="Gebuhr.pdf"; filename*=ISO-8859-1\'\'Geb%FChr.pdf',
+			),
+		).toBe('Gebuhr.pdf');
+	});
+
+	it('falls back to the plain filename when the percent escapes do not decode', () => {
+		expect(
+			fileNameFromContentDisposition(
+				'attachment; filename="scan.pdf"; filename*=UTF-8\'\'%E0%A4%A',
+			),
+		).toBe('scan.pdf');
+	});
+
+	it('strips a traversal out of the name, which reaches the workflow binary data', () => {
+		expect(
+			fileNameFromContentDisposition("attachment; filename*=UTF-8''..%2F..%2Fetc%2Fpasswd"),
+		).toBe('passwd');
+		expect(fileNameFromContentDisposition('attachment; filename="../../etc/passwd"')).toBe(
+			'passwd',
+		);
+	});
+
 	it('returns undefined when the header is absent or unparsable', () => {
 		expect(fileNameFromContentDisposition(undefined)).toBeUndefined();
 		expect(fileNameFromContentDisposition('inline')).toBeUndefined();

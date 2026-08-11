@@ -4,9 +4,11 @@ import {
 	detailError,
 	documentsPageV10,
 	fieldValidationError,
+	headersNotAcceptable,
 	headersV9,
 	headersV10,
 	profile,
+	proxyHtmlPage,
 	versionMismatchError,
 } from './fixtures/paperless';
 
@@ -31,9 +33,10 @@ const ok = (body: unknown, headers: Record<string, string> = headersV10) => ({
 	body,
 });
 
+// Header-free on purpose: a real 406 never carries a version header.
 const notAcceptable = () => ({
 	statusCode: 406,
-	headers: headersV9,
+	headers: headersNotAcceptable,
 	body: versionMismatchError,
 });
 
@@ -50,10 +53,16 @@ describe('normalizeBaseUrl', () => {
 		);
 	});
 
-	it('leaves an /api suffix alone, so the 404 hint can name it', () => {
-		expect(normalizeBaseUrl('https://paperless.example.com/api')).toBe(
-			'https://paperless.example.com/api',
-		);
+	it.each([
+		'https://paperless.example.com/api',
+		'https://paperless.example.com/api/',
+		' https://paperless.example.com/api// ',
+	])('strips the /api suffix from %s, which would otherwise double up', (raw) => {
+		expect(normalizeBaseUrl(raw)).toBe('https://paperless.example.com');
+	});
+
+	it('leaves a path that merely ends in something similar alone', () => {
+		expect(normalizeBaseUrl('https://example.com/paperless')).toBe('https://example.com/paperless');
 	});
 });
 
@@ -210,7 +219,7 @@ describe('version negotiation', () => {
 
 		const upgraded = createFakeExecuteFunctions();
 		upgraded.http
-			.mockResolvedValueOnce({ statusCode: 406, headers: headersV10, body: versionMismatchError })
+			.mockResolvedValueOnce(notAcceptable())
 			.mockResolvedValueOnce(ok(profile, headersV10));
 		const client = await createClient(upgraded.ctx);
 		await client.request({ method: 'GET', path: '/api/profile/' });
@@ -218,6 +227,89 @@ describe('version negotiation', () => {
 		expect(acceptOf(upgraded.http, 0)).toBe('application/json; version=9');
 		expect(acceptOf(upgraded.http, 1)).toBe('application/json; version=10');
 		expect(await client.version()).toBe(10);
+	});
+});
+
+describe('the negotiated-version cache', () => {
+	it('is not written by a pinned credential, which states a preference, not a capability', async () => {
+		const pinned = createFakeExecuteFunctions({ credentials: { apiVersion: '9' } });
+		pinned.http.mockResolvedValue(ok(profile, headersV9));
+		await (await createClient(pinned.ctx)).request({ method: 'GET', path: '/api/profile/' });
+
+		const auto = createFakeExecuteFunctions();
+		auto.http.mockResolvedValue(ok(profile));
+		await (await createClient(auto.ctx)).request({ method: 'GET', path: '/api/profile/' });
+
+		expect(acceptOf(auto.http)).toBe('application/json; version=10');
+	});
+
+	it('is not written by a failed response, which says nothing about the version', async () => {
+		const failing = createFakeExecuteFunctions();
+		failing.http.mockResolvedValue({ statusCode: 401, headers: headersV9, body: detailError });
+		await (await createClient(failing.ctx))
+			.request({ method: 'GET', path: '/api/profile/' })
+			.catch(() => undefined);
+
+		const next = createFakeExecuteFunctions();
+		next.http.mockResolvedValue(ok(profile));
+		const client = await createClient(next.ctx);
+		await client.request({ method: 'GET', path: '/api/profile/' });
+
+		expect(acceptOf(next.http)).toBe('application/json; version=10');
+		expect(await client.version()).toBe(10);
+	});
+
+	it('records the version that succeeded, not the server maximum in X-Api-Version', async () => {
+		const { ctx, http } = createFakeExecuteFunctions();
+		http.mockResolvedValueOnce(notAcceptable()).mockResolvedValueOnce(ok(profile, headersV10));
+
+		const client = await createClient(ctx);
+		await client.request({ method: 'GET', path: '/api/profile/' });
+
+		expect(await client.version()).toBe(9);
+	});
+});
+
+describe('a 406 that is not about the version', () => {
+	it('is not replayed when a proxy answers with an HTML page', async () => {
+		const { ctx, http } = createFakeExecuteFunctions();
+		http.mockResolvedValue({ statusCode: 406, headers: {}, body: proxyHtmlPage });
+
+		const failure = (await createClient(ctx)).request({ method: 'GET', path: '/api/profile/' });
+
+		await expect(failure).rejects.toMatchObject({ kind: 'server', status: 406 });
+		await expect(failure).rejects.toMatchObject({ hint: expect.stringContaining('HTML') });
+		expect(http).toHaveBeenCalledTimes(1);
+	});
+
+	it('does not send an upload twice when the HTML 406 answers a POST', async () => {
+		const { ctx, http } = createFakeExecuteFunctions();
+		http.mockResolvedValue({ statusCode: 406, headers: {}, body: proxyHtmlPage });
+
+		const form = new FormData();
+		form.append('title', 'Invoice');
+		await (await createClient(ctx))
+			.request({ method: 'POST', path: '/api/documents/post_document/', form })
+			.catch(() => undefined);
+
+		expect(http).toHaveBeenCalledTimes(1);
+	});
+
+	it('still replays a multipart upload after a DRF 406, which ran no view code', async () => {
+		const { ctx, http } = createFakeExecuteFunctions();
+		http.mockResolvedValueOnce(notAcceptable()).mockResolvedValueOnce(ok('task-uuid', headersV9));
+
+		const form = new FormData();
+		form.append('title', 'Invoice');
+		await (await createClient(ctx)).request({
+			method: 'POST',
+			path: '/api/documents/post_document/',
+			form,
+		});
+
+		expect(http).toHaveBeenCalledTimes(2);
+		expect(acceptOf(http, 1)).toBe('application/json; version=9');
+		expect(optionsOf(http, 1).body).toBe(form);
 	});
 });
 

@@ -2,6 +2,9 @@ import type { Page } from './pagination';
 
 export type PageFetcher<T> = (page: number) => Promise<Page<T>>;
 
+/** Last-resort stop for a server whose `count` is as wrong as its `hasMore`. */
+const MAX_PAGES = 1000;
+
 /**
  * Pages by incrementing a number, never by following the response's `next` URL --
  * see the note on `Page` for why that URL is not to be trusted.
@@ -11,14 +14,17 @@ export async function* paginate<T>(
 	startPage = 1,
 ): AsyncGenerator<T, void, undefined> {
 	let page = startPage;
-	for (;;) {
-		const { items, hasMore } = await fetch(page);
+	let seen = 0;
+	for (let request = 0; request < MAX_PAGES; request++) {
+		const { items, count, hasMore } = await fetch(page);
 		for (const item of items) {
 			yield item;
 		}
-		// An empty page also terminates: a server that keeps reporting `hasMore`
-		// while returning nothing would otherwise loop forever.
-		if (!hasMore || items.length === 0) {
+		seen += items.length;
+		// `hasMore` alone is not a termination guarantee: a proxy replaying a
+		// cached page, or a filter DRF re-evaluates per request, keeps it true
+		// forever. An empty page and the server's own `count` both bound the walk.
+		if (!hasMore || items.length === 0 || seen >= count) {
 			return;
 		}
 		page += 1;

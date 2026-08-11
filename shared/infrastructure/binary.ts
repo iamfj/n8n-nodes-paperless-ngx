@@ -1,4 +1,5 @@
 import type { IBinaryData, IExecuteFunctions } from 'n8n-workflow';
+import { sanitizeFilename } from 'n8n-workflow';
 
 export type FilePart = { data: Buffer; fileName: string; mimeType?: string };
 
@@ -25,23 +26,37 @@ export function toBuffer(data: unknown): Buffer {
 	return Buffer.alloc(0);
 }
 
+function decodeExtended(charset: string | undefined, value: string): string | undefined {
+	// Only UTF-8 is decoded: `decodeURIComponent` assumes it, and a Latin-1
+	// `filename*` would either throw or produce mojibake -- in both cases the
+	// plain `filename` in the same header is the better answer.
+	if (charset !== undefined && charset !== '' && !/^utf-?8$/i.test(charset)) {
+		return undefined;
+	}
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return undefined;
+	}
+}
+
 export function fileNameFromContentDisposition(raw: unknown): string | undefined {
 	const header = Array.isArray(raw) ? raw[0] : raw;
 	if (typeof header !== 'string') {
 		return undefined;
 	}
-	// RFC 5987 `filename*` wins when present: Paperless sends it for titles with
-	// umlauts, and the plain `filename` alongside it is a lossy transliteration.
-	const encoded = /filename\*=(?:[^']*'[^']*')?([^;]+)/i.exec(header);
-	if (encoded) {
-		try {
-			return decodeURIComponent(encoded[1].trim().replace(/^"|"$/g, ''));
-		} catch {
-			return undefined;
-		}
-	}
+	// RFC 5987 `filename*` wins when it decodes: Paperless sends it for titles
+	// with umlauts, and the plain `filename` alongside it is a lossy
+	// transliteration -- but a lossy name beats no name at all.
+	const extended = /filename\*=(?:([^']*)'[^']*')?([^;]+)/i.exec(header);
 	const plain = /filename="?([^";]+)"?/i.exec(header);
-	return plain ? plain[1].trim() : undefined;
+	const name =
+		(extended && decodeExtended(extended[1], extended[2].trim().replace(/^"|"$/g, ''))) ||
+		plain?.[1].trim();
+	// The header is attacker-controlled as far as n8n is concerned, and the name
+	// reaches the workflow's binary data: `filename*=UTF-8''..%2F..%2Fetc%2Fpasswd`
+	// must not come back out as a path.
+	return name ? sanitizeFilename(name) : undefined;
 }
 
 /**
