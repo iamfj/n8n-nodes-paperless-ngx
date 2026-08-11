@@ -5,6 +5,9 @@
 # publishing identity and provenance, the credential that handles user tokens,
 # the quality gates themselves, and the rules agents follow.
 /.github/workflows/  @iamfj
+# Renovate opens PRs against this repo; loosening its own config (cooldown,
+# digest pinning, the disabled n8n packages) must not land unreviewed.
+/.github/renovate.json5  @iamfj
 /credentials/        @iamfj
 /package.json        @iamfj
 /biome.jsonc         @iamfj

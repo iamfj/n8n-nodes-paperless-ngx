@@ -21,7 +21,8 @@ export default {
 				'ci',
 				'docs',
 				'deps',
-				// Dependabot's grouped dev-dependency PRs commit as `chore(deps-dev)`.
+				// Kept for the Dependabot-era history; Renovate is configured to
+				// commit as `chore(deps)` / `ci(deps)` instead.
 				'deps-dev',
 			],
 		],

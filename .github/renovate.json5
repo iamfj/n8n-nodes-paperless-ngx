@@ -1,0 +1,98 @@
+// Renovate over Dependabot: this repo publishes to npm with a provenance
+// attestation, which makes the dependency pipeline itself a target. The two
+// controls that matter most against a compromised release -- a release-age
+// cooldown before an update is even proposed, and digest-pinned GitHub Actions
+// that stay maintained -- are things Dependabot cannot express at all.
+//
+// Dependabot alerts stay ON at the repo level. They are the detector Renovate's
+// `vulnerabilityAlerts` consumes; only Dependabot's PR-opening halves are off.
+//
+// JSON5 rather than JSON so this reasoning can live next to the settings.
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+
+  extends: [
+    'config:recommended',
+    ':dependencyDashboard',
+    ':semanticCommits',
+    // Surfaces each dependency's OpenSSF Scorecard in the PR body: maintenance
+    // activity, branch protection, whether releases are signed. A dependency
+    // whose score just collapsed is the cheapest takeover signal available.
+    'security:openssf-scorecard',
+  ],
+
+  timezone: 'Europe/Berlin',
+  schedule: ['before 6am on monday'],
+  prConcurrentLimit: 5,
+
+  // The single most effective defence against a compromised npm release. The
+  // shai-hulud class of attack -- stolen maintainer token, malicious version
+  // published, credentials harvested from postinstall -- is typically caught and
+  // yanked within hours. Waiting three days means the registry, not this repo,
+  // absorbs that window. `internalChecksFilter: strict` makes it a real gate:
+  // without it Renovate would still raise the PR and merely annotate it as
+  // pending.
+  minimumReleaseAge: '3 days',
+  internalChecksFilter: 'strict',
+
+  // commitlint (commitlint.config.mjs) enforces a closed scope-enum on this
+  // repo, so the bot's commit subjects are pinned rather than left to
+  // Renovate's defaults -- `chore(deps-dev)` and bare `chore(release-it)` would
+  // both be rejected.
+  semanticCommitType: 'chore',
+  semanticCommitScope: 'deps',
+
+  // Transitive dev CVEs (the undici / nanoid / uuid cluster under release-it)
+  // are only reachable through the lockfile; no direct-dependency bump ever
+  // proposes them.
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ['before 6am on the first day of the month'],
+  },
+
+  vulnerabilityAlerts: {
+    enabled: true,
+    // A known-exploited hole outranks the supply-chain cooldown: waiting three
+    // days here would mean sitting on a published fix.
+    minimumReleaseAge: null,
+    schedule: ['at any time'],
+    labels: ['security'],
+  },
+  // Adds OSV as a second vulnerability source, so a CVE that has not yet been
+  // mapped into the GitHub Advisory Database still raises a PR.
+  osvVulnerabilityAlerts: true,
+
+  packageRules: [
+    {
+      // The package ships zero runtime dependencies, so every npm update here is
+      // tooling. One PR a week beats eight.
+      matchManagers: ['npm'],
+      matchDepTypes: ['devDependencies'],
+      groupName: 'dev-dependencies',
+    },
+    {
+      // n8n-workflow is a peer dependency: its range declares which n8n versions
+      // this node supports. Widening or moving it is a compatibility decision
+      // that belongs to a human reading the n8n changelog, not to a bot.
+      matchPackageNames: ['n8n-workflow'],
+      enabled: false,
+    },
+    {
+      // The CLI's major version is tied to the node API and to the provenance
+      // support publish.yml depends on.
+      matchPackageNames: ['@n8n/node-cli'],
+      matchUpdateTypes: ['major'],
+      enabled: false,
+    },
+    {
+      matchManagers: ['github-actions'],
+      groupName: 'github-actions',
+      semanticCommitType: 'ci',
+      // A version tag is mutable: whoever owns the action's repo can repoint v7
+      // at any commit, and every workflow using it runs that commit on the next
+      // push. Pinning to a digest removes that. Renovate then owns keeping the
+      // pins current, which is the only reason pinning is sustainable.
+      pinDigests: true,
+    },
+  ],
+}
