@@ -1,0 +1,96 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+# --ignore-scripts mirrors CI: n8n-workflow pulls in isolated-vm, which fails to
+# build against Node 20's V8 headers and is never executed by lint/test/build.
+# hooks:install cannot live in package.json -- n8n rejects prepare/postinstall in
+# community nodes -- so this is the only place it runs automatically. Without it
+# every lefthook check silently no-ops, which looks exactly like passing.
+setup = "npm ci --ignore-scripts && npm run hooks:install"
+run_mode = "concurrent"
+
+# Cleans up the per-workspace n8n folder the dev script creates. The -n guard is
+# load-bearing: an empty CONDUCTOR_WORKSPACE_NAME would expand to the parent and
+# wipe every other workspace's n8n database.
+archive = '[ -n "$CONDUCTOR_WORKSPACE_NAME" ] && rm -rf "$HOME/.n8n-node-cli/$CONDUCTOR_WORKSPACE_NAME"'
+
+[scripts.run.dev]
+# n8n-node dev spawns n8n with { ...process.env }, so N8N_PORT reaches it, and
+# --custom-user-folder moves the SQLite DB and the custom-nodes symlink out of the
+# shared ~/.n8n-node-cli. Without both, two workspaces fight over one port, one
+# database and one symlink. Cost: the Paperless credential is entered per workspace.
+# The CLI's own "press o to open" still points at 5678 -- use the preview URL below.
+command = 'N8N_PORT=$CONDUCTOR_PORT npm run dev -- --custom-user-folder "$HOME/.n8n-node-cli/$CONDUCTOR_WORKSPACE_NAME"'
+available_in = [ "local" ]      # CONDUCTOR_PORT is unset in cloud workspaces
+default = true
+icon = "play"
+
+[scripts.run.test]
+command = "npm run test:watch"
+icon = "test-tube"
+
+[[preview_urls]]
+name = "n8n"
+url = "http://localhost:$CONDUCTOR_PORT"
+
+[git]
+# Without this, every contributor's first push from a fresh workspace fails on a
+# missing upstream. Branch naming and archive behaviour stay in ~/.conductor, so
+# the repo does not impose one contributor's preference on everyone.
+worktree_push_auto_setup_remote = true
+
+[prompts]
+# Appended to every session, so every token here is paid for repeatedly: point at
+# the files, do not restate them.
+general = '''
+Read AGENTS.md before writing code; nodes/AGENTS.md and contexts/AGENTS.md add
+rules for those folders.
+
+Before claiming done: npm run lint, typecheck, typecheck:test, test, build. Run
+them; report what you did not do as clearly as what you did.
+
+Commit as you go with conventional commits -- scopes are fixed by
+commitlint.config.mjs. Never add yourself to authorship metadata.
+
+At most two subagents at once.
+'''
+
+code_review = '''
+Follow docs/review.md exactly. Scope is the diff against the merge-base with
+main: git diff origin/main...
+
+Three phases, once each: FIND, TRIAGE, gates. Then emit the report in the fixed
+format and stop.
+
+Do not fix anything during the review -- not a typo, not a one-character change.
+Write no files. Fixing is a separate action with its own bound.
+
+Put findings on the diff with the DiffComment tool. Do not post to GitHub unless
+asked.
+'''
+
+create_pr = '''
+Title: conventional commit, scope from commitlint.config.mjs. Release notes are
+generated from it.
+
+Body: the sections of .github/PULL_REQUEST_TEMPLATE.md, in order. Tick a
+verification box only if you ran or read the thing it claims. An honest unticked
+box costs a review comment; a false ticked one costs a failed Cloud submission
+months later.
+
+If the branch has one catch-all commit, split it before pushing.
+
+Never add yourself to authorship metadata: no Co-Authored-By trailer, no
+"Generated with", no tool name in the title, body or commit messages.
+'''
+
+fix_errors = '''
+One round of fixes, then report what is still red. Do not loop.
+
+Never disable a rule, add an ignore comment, or narrow a glob to make a gate
+pass, and never touch eslint.config.mjs -- n8n-node lint byte-compares it against
+a frozen template and exits 1 on any edit.
+
+Fix the cause the error names. A type error answered with `as any`, or a failing
+test answered by editing the assertion, is a new finding rather than a fix.
+'''
