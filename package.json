@@ -25,24 +25,26 @@
   },
   "scripts": {
     "build": "n8n-node build",
-    "build:watch": "tsc --watch",
     "dev": "n8n-node dev",
     "lint": "n8n-node lint",
     "lint:fix": "n8n-node lint --fix",
     "release": "n8n-node release",
     "prepublishOnly": "n8n-node prerelease",
-    "format": "biome format --write .",
     "check": "biome check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "typecheck:test": "tsc -p tsconfig.test.json",
-    "hooks:install": "lefthook install"
+    "hooks:install": "lefthook install",
+    "fix": "biome check --write ."
   },
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "n8n": {
     "n8nNodesApiVersion": 1,
     "strict": true,

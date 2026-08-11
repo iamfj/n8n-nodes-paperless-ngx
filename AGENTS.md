@@ -176,13 +176,12 @@ This is a REST adapter. Layers that only forward are the thing we are actively a
 
 ### Adding a resource
 
-Write a `defineResource` spec in the owning context's `presentation/` folder. Do NOT hand-write
-operation files. If a resource genuinely doesn't fit the factory — binary bodies, task polling,
-irregular endpoints — extend the factory or justify the exception in the PR description.
+**Write it by hand, in the owning context.** There is no resource factory yet, and that is
+deliberate: its right shape is only visible once real duplication exists. Build the first two or
+three resources longhand, then extract the factory from what they actually share.
 
-`defineResource` is currently a **type signature only**. It gets implemented once three contexts
-exist and the real duplication is visible; building it earlier would violate the rule-of-three it
-exists to enforce.
+Do not build the factory speculatively, and do not treat the first resource's shape as settled —
+whatever lands first is what everything after it will copy, so it is worth getting right.
 
 ### Before you claim done
 

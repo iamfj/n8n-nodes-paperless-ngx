@@ -1,19 +1,17 @@
-// Skeleton node: it carries a single Document → Get operation so the dev loop,
-// CI and the credential test have something loadable to compile against while
-// the real resources land in later waves. Delete this comment once they do.
-//
 // Programmatic style is deliberate: upcoming resources need multi-step calls
 // (resolving Correspondents/Tags by name, downloading binary originals and
 // archives, polling Consumption tasks) that declarative routing cannot express.
 
 import type {
+	IDataObject,
 	IExecuteFunctions,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
+import { toNodeError } from '../../shared/infrastructure/error-mapper';
+import { createClient } from '../../shared/infrastructure/paperless-client';
 
 export class PaperlessNgx implements INodeType {
 	description: INodeTypeDescription = {
@@ -88,35 +86,21 @@ export class PaperlessNgx implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const credentials = await this.getCredentials('paperlessNgxApi');
-		const baseUrl = (credentials.baseUrl as string).replace(/\/+$/, '');
+		const client = await createClient(this);
 
 		for (let i = 0; i < items.length; i++) {
-			try {
-				const documentId = this.getNodeParameter('documentId', i) as number;
+			const documentId = this.getNodeParameter('documentId', i) as number;
 
-				const document = await this.helpers.httpRequestWithAuthentication.call(
-					this,
-					'paperlessNgxApi',
-					{
-						method: 'GET',
-						url: `${baseUrl}/api/documents/${documentId}/`,
-						json: true,
-					},
-				);
+			const document = await client
+				.request<IDataObject>({ method: 'GET', path: `/api/documents/${documentId}/` })
+				.catch((cause: unknown) => {
+					if (!this.continueOnFail()) {
+						throw toNodeError(this.getNode(), cause, i);
+					}
+					return { error: (cause as Error).message };
+				});
 
-				returnData.push({ json: document, pairedItem: { item: i } });
-			} catch (error) {
-				if (this.continueOnFail()) {
-					returnData.push({
-						json: { error: (error as Error).message },
-						pairedItem: { item: i },
-					});
-					continue;
-				}
-
-				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: i });
-			}
+			returnData.push({ json: document, pairedItem: { item: i } });
 		}
 
 		return [returnData];

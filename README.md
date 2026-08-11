@@ -13,22 +13,22 @@
 </div>
 
 > [!WARNING]
-> **Early development.** The kernel and tooling are in place; resources are landing context by
-> context. The published API will change until `1.0.0`. Watch the repo for the first stable release.
+> **Not usable yet — zero resources are implemented.** What exists today is the HTTP client,
+> API-version negotiation, the error model, and the tooling. Everything under "Planned" below is
+> exactly that. Watch the repo for the first release.
 
-## Why this node
+## Planned
 
 - **Complete, not partial.** Every Paperless resource that has an automation story — documents,
   versions, notes, taxonomy, bulk operations, sharing, workflows, tasks, trash. Not just a document
   list.
 - **Built for verification.** Zero runtime dependencies, published with npm provenance from CI.
-  Every existing Paperless node on npm fails that bar today.
 - **Works on API v9 and v10.** The version is negotiated per request and falls back automatically,
   so the node doesn't break when you upgrade Paperless — or when you don't.
-- **Uploads that actually finish.** Paperless returns a task ID, not a document. This node can wait
+- **Uploads that actually finish.** Paperless returns a task ID, not a document. This node will wait
   for consumption to complete and hand you the real document.
-- **AI-agent ready.** Every operation is exposed as a tool, so an agent can answer questions
-  against your archive.
+- **AI-agent ready.** Every operation exposed as a tool, so an agent can answer questions against
+  your archive.
 
 ## Installation
 
@@ -54,39 +54,12 @@
 | API Version | `Auto` unless you depend on a specific response shape |
 | Ignore SSL Issues | only for self-signed certificates |
 
-Hit **Test** — it confirms the token, the URL, and which API version your server speaks.
+Hit **Test** — it confirms the URL and the token against `/api/profile/`.
 
 ## Compatibility
 
-| | Minimum | Tested against |
-|---|---|---|
-| n8n | 1.0.0 | latest |
-| Paperless-ngx | 2.0 | 2.x, API v9 and v10 |
-| Node.js | 20 | 20, 22 |
-
-## Operations
-
-<details>
-<summary><b>Coverage table</b> — click to expand</summary>
-
-Landing context by context. This table is generated from the resource specs, so it cannot drift
-from the code.
-
-_Populated as contexts ship._
-
-</details>
-
-## Deliberately not covered
-
-These endpoints exist in the API but have no automation story, so they are excluded on purpose
-rather than by omission:
-
-| Endpoint | Why |
-|---|---|
-| `/api/ui_settings/` | Web-UI state, meaningless outside the browser |
-| `/api/logs/`, `/api/config/` | Server administration, not document workflow |
-| `/api/profile/*`, `/api/oauth/*`, TOTP | Account and auth management |
-| `/api/documents/chat/` | Server-sent events; doesn't map to a node output |
+Paperless-ngx serving API v9 or v10, and Node.js 20 or 22. Both API versions are exercised by the
+test suite; the node negotiates between them per request.
 
 ## Contributing
 

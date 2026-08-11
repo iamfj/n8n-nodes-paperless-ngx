@@ -6,14 +6,10 @@ One folder per context: `archive`, `ingestion`, `taxonomy`, `sharing`, `automati
 **A context must never import another context.** If two need the same thing, it belongs in
 `shared/`. This is enforced by lint, not by review.
 
-**New CRUD resource → write a `defineResource` spec** in the owning context's `presentation/`.
-Do not hand-write operation files. If a resource genuinely doesn't fit — binary bodies, task
-polling, irregular endpoints — extend the factory or justify the exception in the PR description.
+**Write resources by hand.** There is no factory yet — see the root `AGENTS.md`. Extract one once
+two or three resources exist and the duplication is real.
 
-`application/` exists only for real orchestration across more than one call: upload-then-poll,
-merge, search-with-highlights. **If a use case is a single HTTP request, the presentation spec calls
-the client directly.** An application function that only forwards is the layer this project exists
-to avoid — delete it.
+Add folders when you need them, not before. A context that is one file is one file.
 
 Branch on capabilities, never on version numbers:
 `supports(await client.version(), 'titleSearch')`, never `version === 10`.

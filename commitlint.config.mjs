@@ -21,6 +21,8 @@ export default {
 				'ci',
 				'docs',
 				'deps',
+				// Dependabot's grouped dev-dependency PRs commit as `chore(deps-dev)`.
+				'deps-dev',
 			],
 		],
 	},
