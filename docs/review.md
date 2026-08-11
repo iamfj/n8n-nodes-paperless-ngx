@@ -49,7 +49,7 @@ drop; matching two is the higher one. The tier choice is the halting decision â€
 | `BLOCK` | A runtime dependency, `fs`, `process.env`, a lifecycle script, a hardcoded secret, or a credential value reaching a log, error or node output. Cloud rejects the package, or a token leaks. |
 | `RULE` | A version literal where `supports()` belongs; HTTP in a `.node.ts`; anything on `AGENTS.md`'s "Rejected by decision" list except its last line â€” barrel files, `I`-prefixed interfaces, `Helper`/`Manager`/`Util` names, Zod, repository interfaces and ports, domain events, CQRS, `Result<T, E>`, an application service wrapping a single call. The repo pays twice for a decision it already made. |
 | `BUG` | Wrong at runtime: a non-idempotent request replayed, an unbounded page walk, a response shape guessed rather than read off the upstream serializer. A self-hosted user hits it and cannot tell why. |
-| `NIT` | Naming, a comment saying what instead of why, a comment whose why about another system cites no source, a missing test for behaviour already correct. |
+| `NIT` | Naming, a comment saying what instead of why, a comment whose why about another system cites no source, two repo files stating the same rule in ways that disagree, a missing test for behaviour already correct. |
 
 `AGENTS.md`'s "no abstraction before its third occurrence" and "the default direction is
 subtractive" are guidance for whoever writes the code. They are not predicates a review can settle,
