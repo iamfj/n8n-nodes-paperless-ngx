@@ -5,8 +5,10 @@ hand, so both emit the same artefact. Fixing has its own bound in `docs/fix.md`.
 
 **Scope:** the first review of a branch reads `git diff origin/main...`. Every later one reads
 `git diff <REVIEWED sha of the previous report>..HEAD` plus uncommitted work, and the report names
-the sha it reviewed. Each round's input is then strictly smaller than the last, which is the only
-reason the review→fix loop ends. A fix that breaks a line no round has read falls to CI and the
+the sha it reviewed. Each round's input is then smaller than the last, which is the reason the
+review→fix loop ends — with one leak: work that was uncommitted when a round read it is committed
+after that round's sha, so the next round reads it again. Review a clean tree and it does not
+happen. A fix that breaks a line no round has read falls to CI and the
 tests; that net is named at the bottom of this file.
 
 A line the diff did not add or change is **out of scope**, even when the diff touches its file. If
