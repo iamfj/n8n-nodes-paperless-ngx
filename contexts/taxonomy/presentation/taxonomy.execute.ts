@@ -18,7 +18,7 @@ function bodyFrom(descriptor: TaxonomyDescriptor, fields: IDataObject): Record<s
 	for (const field of descriptor.extraFields) {
 		const value = fields[field.name];
 		if (typeof value === 'string' && value.length > 0) {
-			extras[field.apiName ?? field.name] = value;
+			extras[field.name] = value;
 		}
 	}
 	return taxonomyBody({

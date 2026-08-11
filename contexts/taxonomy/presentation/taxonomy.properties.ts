@@ -7,25 +7,24 @@ import {
 
 export function taxonomyOperations(descriptor: TaxonomyDescriptor): INodePropertyOptions[] {
 	const singular = descriptor.displayName;
-	const article = /^[AEIOU]/.test(singular) ? 'an' : 'a';
 	return [
 		{
 			name: 'Create',
 			value: 'create',
 			description: `Create a new ${singular}`,
-			action: `Create ${article} ${singular.toLowerCase()}`,
+			action: `Create a ${singular.toLowerCase()}`,
 		},
 		{
 			name: 'Delete',
 			value: 'delete',
-			description: `Delete ${article} ${singular}`,
-			action: `Delete ${article} ${singular.toLowerCase()}`,
+			description: `Delete a ${singular}`,
+			action: `Delete a ${singular.toLowerCase()}`,
 		},
 		{
 			name: 'Get',
 			value: 'get',
 			description: `Retrieve a single ${singular} by ID`,
-			action: `Get ${article} ${singular.toLowerCase()}`,
+			action: `Get a ${singular.toLowerCase()}`,
 		},
 		{
 			name: 'Get Many',
@@ -37,7 +36,7 @@ export function taxonomyOperations(descriptor: TaxonomyDescriptor): INodePropert
 			name: 'Update',
 			value: 'update',
 			description: `Change an existing ${singular}`,
-			action: `Update ${article} ${singular.toLowerCase()}`,
+			action: `Update a ${singular.toLowerCase()}`,
 		},
 	];
 }
