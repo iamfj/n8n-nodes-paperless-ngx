@@ -8,8 +8,7 @@ most contributions come from people who hit a missing endpoint in their own setu
 Node 20 or newer.
 
 ```bash
-npm ci
-npm run hooks:install   # once per clone — see below
+npm cinpm run hooks:install   # once per clone — see below
 npm run dev             # runs n8n with this node linked, hot-reloading on change
 ```
 
@@ -84,12 +83,5 @@ what a release note reader ends up seeing.
 
 ## Comments
 
-Names carry the meaning; comments carry the reasoning.
-
-- Comment **why**, never **what**. If a reader can see it from the code, delete it.
-- No JSDoc that restates a signature. `@param id The id` is noise.
-- No banner or section-divider comments.
-- No `TODO` without a linked issue. `// TODO(#42): ...` or don't write it.
-
-A comment explaining that Paperless returns `all` only below API v10 is worth its
-line. A comment saying `// fetch the documents` above `fetchDocuments()` is not.
+See [§Comments and naming in `AGENTS.md`](AGENTS.md#comments-and-naming). The rules are the same
+for humans and agents, and stated once so they cannot drift apart.
