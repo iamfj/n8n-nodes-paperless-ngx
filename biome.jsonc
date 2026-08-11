@@ -85,6 +85,39 @@
 			}
 		},
 		{
+			// The context rule, machine-checked, so the review does not have to
+			// re-derive it every round. Patterns match the import specifier, and a
+			// context only ever names another context by name -- its own files are
+			// reached relatively -- so a segment naming any context is the violation.
+			"includes": ["contexts/*/**"],
+			"linter": {
+				"enabled": true,
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"**/archive/**",
+											"**/ingestion/**",
+											"**/taxonomy/**",
+											"**/sharing/**",
+											"**/automation/**",
+											"**/access/**",
+											"**/system/**"
+										],
+										"message": "One context must not import another. What both need belongs in shared/."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
 			// `n8n-node` rewrites package.json through Prettier with only
 			// { parser: 'json' }, so it never sees this repo's config and always
 			// emits 2-space indentation. Matching that here keeps every
