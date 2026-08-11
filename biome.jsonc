@@ -1,0 +1,77 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
+	"files": {
+		"includes": ["**", "!dist/**", "!node_modules/**", "!coverage/**", "!CHANGELOG.md"]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineWidth": 100,
+		"lineEnding": "lf",
+		"bracketSpacing": true
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"quoteProperties": "asNeeded",
+			"trailingCommas": "all",
+			"semicolons": "always",
+			"arrowParentheses": "always"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
+	"linter": {
+		// ESLint (n8n strict) lints every *.ts in the repo and is the n8n Cloud
+		// verification gate, so it owns linting by default. Biome's linter is
+		// opted INTO per-path below, and only for rules ESLint does not already
+		// cover -- a duplicated rule is just the same error reported twice.
+		"enabled": false,
+		"rules": {
+			"preset": "none"
+		}
+	},
+	"overrides": [
+		{
+			// Pure-TypeScript layers: no n8n node/credential surface, so Biome's
+			// small non-overlapping rule set is worth running here.
+			"includes": ["shared/**", "contexts/**"],
+			"linter": {
+				"enabled": true,
+				"rules": {
+					"correctness": {
+						// Overlaps ts-eslint's no-unused-vars, but unlike ESLint this
+						// has a safe autofix, so `biome check --write` on pre-commit
+						// deletes dead imports before ESLint ever complains.
+						"noUnusedImports": "error"
+					},
+					"style": {
+						"useConst": "error"
+					},
+					"performance": {
+						"noBarrelFile": "error",
+						"noReExportAll": "error"
+					}
+				}
+			}
+		},
+		{
+			// `n8n-node` rewrites package.json through Prettier with only
+			// { parser: 'json' }, so it never sees this repo's config and always
+			// emits 2-space indentation. Matching that here keeps every
+			// CLI-driven package.json edit from producing a formatting diff.
+			"includes": ["package.json"],
+			"formatter": {
+				"indentStyle": "space",
+				"indentWidth": 2
+			}
+		}
+	]
+}

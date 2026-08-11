@@ -1,0 +1,23 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		// Type-check only. The main build must never emit test files into dist.
+		"noEmit": true,
+		"declaration": false,
+		"sourceMap": false,
+		"incremental": false,
+		// vitest ships as ESM with an "exports" map only. The main config's
+		// node10 resolution ignores "exports" and fails to find its types.
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"types": ["node", "vitest/globals"]
+	},
+	"include": [
+		"test/**/*",
+		"vitest.config.mts",
+		"contexts/**/*",
+		"credentials/**/*",
+		"nodes/**/*",
+		"shared/**/*"
+	]
+}

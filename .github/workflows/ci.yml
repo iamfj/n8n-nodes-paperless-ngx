@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# Cancel in-progress runs for the same branch/PR to avoid wasting CI minutes.
+# head_ref is set on pull_request events and groups the PR's runs together;
+# ref covers pushes to main, where head_ref is empty.
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Report every failing Node version, not just the first one to fall over.
+      fail-fast: false
+      matrix:
+        # 20 is the floor n8n still supports; 22 is the current LTS.
+        node-version: [20, 22]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting and lint rules
+        run: npx biome ci .
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Typecheck tests
+        run: npm run typecheck:test
+
+      - name: Run tests
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
+
+# `@n8n/scan-community-package` is deliberately absent here. Its CLI resolves a
+# package by name from the npm registry and unpacks the published tarball; it has
+# no local-directory mode, and its first check is npm provenance — which a branch
+# cannot have. It runs post-publish in publish.yml instead.
+#
+# `npm run lint` is the pre-merge equivalent: @n8n/eslint-plugin-community-nodes
+# enforces n8n's verification rules across the whole repo, tests included.

@@ -1,0 +1,72 @@
+{
+  "name": "@iamfj/n8n-nodes-paperless-ngx",
+  "version": "0.1.0",
+  "description": "n8n community node to automate Paperless-ngx document management: consume documents, correspondents, tags, document types and storage paths from your Paperless-ngx instance.",
+  "license": "MIT",
+  "homepage": "https://github.com/iamfj/n8n-nodes-paperless-ngx",
+  "keywords": [
+    "n8n-community-node-package",
+    "paperless",
+    "paperless-ngx",
+    "document-management",
+    "dms",
+    "ocr"
+  ],
+  "author": {
+    "name": "Fabian Jocks",
+    "email": "24557998+iamfj@users.noreply.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamfj/n8n-nodes-paperless-ngx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iamfj/n8n-nodes-paperless-ngx/issues"
+  },
+  "scripts": {
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "typecheck:test": "tsc -p tsconfig.test.json",
+    "hooks:install": "lefthook install"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/PaperlessNgxApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/PaperlessNgx/PaperlessNgx.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.8",
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@n8n/node-cli": "*",
+    "@types/node": "^22.20.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "9.32.0",
+    "lefthook": "^2.1.10",
+    "release-it": "^19.0.4",
+    "typescript": "5.9.2",
+    "vitest": "^4.1.10"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

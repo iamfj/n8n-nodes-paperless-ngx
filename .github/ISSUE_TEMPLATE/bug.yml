@@ -1,0 +1,90 @@
+name: Bug report
+description: Something in the node behaves incorrectly
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Paperless-ngx changed response shapes between API v9 and v10, so the
+        versions below are usually what determines the answer. Please fill them in.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        Steps, or an exported workflow with credentials removed. The node's
+        parameters matter — resource, operation, and any filters you set.
+      placeholder: |
+        1. Add a Paperless-ngx node, resource "Document", operation "Get Many"
+        2. Set ...
+        3. Execute — the node returns ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error output
+      description: |
+        The full error from the node, or the relevant n8n log lines.
+        Redact your API token and any document contents you would rather not share.
+      render: text
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      description: Version of @iamfj/n8n-nodes-paperless-ngx
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: n8n-version
+    attributes:
+      label: n8n version
+      placeholder: 1.90.0
+    validations:
+      required: true
+
+  - type: input
+    id: paperless-version
+    attributes:
+      label: Paperless-ngx version
+      description: Shown in the Paperless-ngx UI footer, or in the X-Version response header
+      placeholder: 3.0.5
+    validations:
+      required: true
+
+  - type: dropdown
+    id: api-version
+    attributes:
+      label: Paperless-ngx API version
+      description: The "API Version" field on your credential. If set to Auto, check the X-Api-Version response header.
+      options:
+        - '10'
+        - '9'
+        - Auto (unsure which was negotiated)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: n8n-hosting
+    attributes:
+      label: How is n8n running
+      options:
+        - Self-hosted (Docker)
+        - Self-hosted (npm)
+        - n8n Cloud
+        - Other
+    validations:
+      required: true

@@ -1,0 +1,12 @@
+dist
+node_modules
+
+coverage
+*.tsbuildinfo
+
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+.DS_Store
+.idea

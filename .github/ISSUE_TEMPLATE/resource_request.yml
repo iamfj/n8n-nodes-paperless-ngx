@@ -1,0 +1,48 @@
+name: Resource or operation request
+description: Ask for a Paperless-ngx endpoint this node does not cover yet
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This node does not wrap the whole Paperless-ngx API, only the parts people
+        have needed. Pointing at the exact endpoint makes it quick to add.
+
+  - type: input
+    id: endpoint
+    attributes:
+      label: Paperless-ngx endpoint
+      description: Method and path, from https://docs.paperless-ngx.com/api/
+      placeholder: POST /api/documents/bulk_edit/
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: What are you trying to automate
+      description: |
+        The workflow you want to build, not just the endpoint. This decides how the
+        operation is shaped — which fields become node parameters, what it returns,
+        and whether it needs to handle binary data.
+      placeholder: |
+        When an invoice lands in the inbox tag, I want to ... so that ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current workaround
+      description: Are you doing this today with an HTTP Request node? If so, paste its configuration — it is close to the implementation.
+
+  - type: dropdown
+    id: api-version
+    attributes:
+      label: Which API version does this endpoint need
+      options:
+        - '10'
+        - '9'
+        - Both / unsure
+    validations:
+      required: true

@@ -1,0 +1,32 @@
+# Fast on commit, thorough on push.
+pre-commit:
+  parallel: true
+  jobs:
+    - name: format
+      glob: '*.{js,mjs,cjs,ts,mts,cts,json,jsonc}'
+      run: npx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+    - name: typecheck
+      run: npm run typecheck
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: npx commitlint --edit {1}
+
+# `npm run lint` is the n8n Cloud verification gate: @n8n/eslint-plugin-community-nodes
+# runs repo-wide and catches blockers (forbidden lifecycle scripts, restricted
+# imports, hardcoded secrets) offline, before they cost a CI round trip.
+# @n8n/scan-community-package is deliberately NOT here -- see docs/code-quality.md.
+pre-push:
+  parallel: true
+  jobs:
+    - name: lint
+      run: npm run lint
+
+    - name: test
+      run: npm run test
+
+    - name: build
+      run: npm run build

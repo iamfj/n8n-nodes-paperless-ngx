@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help with a workflow
+    url: https://github.com/iamfj/n8n-nodes-paperless-ngx/discussions
+    about: Ask here if the node is not misbehaving — setup, credentials, or how to build something.
+  - name: Security vulnerability
+    url: https://github.com/iamfj/n8n-nodes-paperless-ngx/security/advisories/new
+    about: Report privately. Please do not open a public issue.
+  - name: Problem with Paperless-ngx itself
+    url: https://github.com/paperless-ngx/paperless-ngx/issues
+    about: Bugs in the Paperless-ngx server or its API belong upstream.
+  - name: Problem with n8n itself
+    url: https://community.n8n.io/
+    about: Issues with n8n outside this node.
