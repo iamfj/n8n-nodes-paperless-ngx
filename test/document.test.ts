@@ -106,6 +106,12 @@ describe('documentPatchBody', () => {
 		expect(documentPatchBody({ correspondent: null })).toEqual({ correspondent: null });
 	});
 
+	it('truncates created to a date, which is all Django DateField accepts', () => {
+		expect(documentPatchBody({ created: '2026-04-01T18:02:57.104Z' })).toEqual({
+			created: '2026-04-01',
+		});
+	});
+
 	it('renames the camelCase fields to the serializer names', () => {
 		expect(documentPatchBody({ documentType: 4, storagePath: 2, archiveSerialNumber: 7 })).toEqual({
 			document_type: 4,
