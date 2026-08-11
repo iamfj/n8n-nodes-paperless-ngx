@@ -12,8 +12,10 @@ the next round's findings, and the loop stops shrinking.
   decision the report already recorded.
 - **Adding prose is not a fix.** A comment answering a finding about behaviour leaves the behaviour
   wrong, and the comment is more surface for the next round to read.
-- **Anything you notice that is not in the report goes at the bottom of the report as a new
-  candidate.** You do not fix it.
+- **Anything you notice that is not in the report is named in the fix summary as a new candidate.**
+  You do not fix it, and you do not edit the report — its shape is fixed by `docs/review.md`, which
+  has no section for a candidate the review did not raise. The next round reads the code, not the
+  summary; the summary is what the person deciding reads.
 
 Then the gates: `npm run lint`, `npm run typecheck`, `npm run typecheck:test`, `npm run test`,
 `npm run build`. Report what is still open, and stop — the next review is a separate action.
