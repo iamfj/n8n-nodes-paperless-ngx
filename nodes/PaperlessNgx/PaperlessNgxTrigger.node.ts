@@ -39,11 +39,6 @@ export class PaperlessNgxTrigger implements INodeType {
 		defaults: {
 			name: 'Paperless-ngx Trigger',
 		},
-		// `@n8n/community-nodes/node-usable-as-tool` requires the property, and the
-		// type admits only `true` or a description object — `false` does not compile.
-		// It is inert on a trigger either way: an agent calls a tool through
-		// `execute`, which a trigger node does not have.
-		usableAsTool: true,
 		inputs: [],
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
