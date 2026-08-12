@@ -156,6 +156,19 @@ describe('trigger activation', () => {
 		expect(fake.http).not.toHaveBeenCalled();
 	});
 
+	it('activates on a filter row added and left at its default, which filters on nothing', async () => {
+		const fake = createFakeHookFunctions({
+			parameters: { event: 'documentAdded', filters: { correspondent: '', tags: [] } },
+		});
+		fake.http.mockResolvedValue(ok(createdWorkflow));
+
+		await hooks.create.call(fake.ctx as IHookFunctions);
+
+		expect(
+			(requestOptions(fake.http).body as { triggers: IDataObject[] }).triggers[0],
+		).toMatchObject({ filter_has_tags: [], filter_has_correspondent: null });
+	});
+
 	it('reports a token that may not write workflows instead of activating silently', async () => {
 		const fake = createFakeHookFunctions({ parameters: { event: 'documentAdded' } });
 		fake.http.mockResolvedValue({
