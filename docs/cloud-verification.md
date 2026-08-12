@@ -26,8 +26,8 @@ repository check can cover. The requirements are read from n8n's two published p
 | Repository URL that resolves | manual, runbook step 2 | `package.json#repository` |
 | Written in TypeScript | manual | no JavaScript outside `scripts/` |
 | English-only UI strings | manual | node and credential display names and descriptions |
-| Published from GitHub Actions with npm provenance | `.github/workflows/publish.yml` | `publishConfig.provenance`, `id-token: write` |
-| Provenance actually landed on the published version | `@n8n/scan-community-package` step in `publish.yml` | runs post-publish; its first assertion is provenance |
+| Published from GitHub Actions with npm provenance | `.github/workflows/release.yml` | `publishConfig.provenance`, `id-token: write` |
+| Provenance actually landed on the published version | `@n8n/scan-community-package` job in `release.yml` | runs post-publish; its first assertion is provenance |
 | Documentation links in the codex | manual | `nodes/PaperlessNgx/PaperlessNgx.node.json#resources` |
 | Example workflows in the README | manual | `README.md` → Usage |
 | Does not duplicate a verified integration | manual, runbook step 6 | n8n's community-node list carries no Paperless node |
@@ -44,15 +44,24 @@ These cannot be done from the repository.
 1. Confirm the npm account owns the `@iamfj` scope and that its identity matches the GitHub
    maintainer. n8n checks that the npm publisher and the repository maintainer are the same person.
 2. Confirm the GitHub repository is public and its URL matches `package.json#repository`.
-3. Create a granular npm token scoped to this package and add it as the `NPM_TOKEN` repository
+3. Create an npm **Granular Access Token** on npmjs.com and add it as the `NPM_TOKEN` repository
    secret. A Trusted Publisher is configured from a package's own settings page, so it does not exist
-   before the first publish — that one goes through the token.
-4. Run `npm run release` locally. It bumps, changelogs, commits, tags and pushes; the tag triggers
-   `publish.yml`, which publishes with provenance and then scans the published version.
+   before the first publish — that one goes through the token. Scope it to the `@iamfj` **scope**,
+   not to the package, which does not exist yet, with *Read and write*. Set **Bypass 2FA = true**: it
+   defaults to false, and CI publishing then fails with `EOTP`. Its expiry is capped at 90 days,
+   which is fine — step 5 deletes it.
+4. Tag the release and push it: `git tag 0.1.0 && git push origin 0.1.0`. That starts `release.yml`
+   on its tag path — the five gates, `verify:package`, publish with provenance, then the scan.
+   Afterwards run `gh release create 0.1.0 --verify-tag --title 0.1.0 --notes-file -` with the
+   changelog entry as the body, so release-please recognises the tag as released.
    **This is the first irreversible step — a published version is permanent.**
-5. Once the package exists on npm, configure the Trusted Publisher (GitHub Actions, this repository's
-   owner and name, workflow `publish.yml`), then delete the `NPM_TOKEN` secret. `publish.yml` handles
-   both paths; leaving `NPM_TOKEN` unset selects OIDC.
+   Every later version comes from the Release PR instead; see `docs/release.md`.
+5. Once the package exists on npm, configure the Trusted Publisher: `npm trust github
+   --allow-publish` against this package, or npmjs.com → package → *Access* → Trusted Publishers with
+   owner `iamfj`, repo `n8n-nodes-paperless-ngx`, workflow `release.yml` and no environment.
+   `--allow-publish` is mandatory for publishers created after 2026-05-20. Then delete the
+   `NPM_TOKEN` secret — `release.yml` handles both paths, and leaving `NPM_TOKEN` unset selects OIDC.
+   Confirm OIDC works on the next real release before relying on it.
 6. Sign up at <https://creators.n8n.io/nodes> and submit the package.
 
 Ship `0.1.0` first rather than jumping to `1.0.0`: it buys real scanner output cheaply, and n8n does

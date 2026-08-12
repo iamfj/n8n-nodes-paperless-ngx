@@ -93,7 +93,7 @@ relaxed without a reason written down next to them:
 - **`pinDigests` on GitHub Actions.** A version tag is mutable; whoever owns the action's repo can
   repoint `v7` at any commit and it runs on the next push. Both workflows pin to a commit SHA with
   the human-readable version in a trailing comment, which is what Renovate reads to offer upgrades.
-- **`npm ci --ignore-scripts` in `publish.yml`.** That job holds `id-token: write` and npm publish
+- **`npm ci --ignore-scripts` in `release.yml`.** That job holds `id-token: write` and npm publish
   rights. An install script running there could alter `dist/` *before* the provenance attestation is
   minted, and the attestation would then vouch for the tampered build. CI already installs this way.
   The `npx @n8n/scan-community-package` step after it is pinned to an exact version for the same
