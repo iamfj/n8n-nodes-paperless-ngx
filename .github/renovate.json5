@@ -45,14 +45,14 @@
 
   // commitlint (commitlint.config.mjs) enforces a closed scope-enum on this
   // repo, so the bot's commit subjects are pinned rather than left to
-  // Renovate's defaults -- `chore(deps-dev)` and bare `chore(release-it)` would
+  // Renovate's defaults -- `chore(deps-dev)` and bare `chore(typescript)` would
   // both be rejected.
   semanticCommitType: 'chore',
   semanticCommitScope: 'deps',
 
-  // Transitive dev CVEs (the undici / nanoid / uuid cluster under release-it)
-  // are only reachable through the lockfile; no direct-dependency bump ever
-  // proposes them.
+  // Transitive dev CVEs (the undici / nanoid / uuid cluster under
+  // @n8n/node-cli and n8n-workflow) are only reachable through the lockfile;
+  // no direct-dependency bump ever proposes them.
   //
   // The one hole in the cooldown: `minimumReleaseAge` does not apply to
   // lockFileMaintenance -- Renovate's update-type support matrix marks it
@@ -116,8 +116,9 @@
       enabled: false,
     },
     {
-      // The CLI's major version is tied to the node API and to the provenance
-      // support publish.yml depends on. Minor is listed too because the package
+      // The CLI's major version is tied to the node API, and release.yml calls
+      // it for `build`, `lint` and the `prerelease` guard in prepublishOnly --
+      // the three places a break would surface. Minor is listed too because the package
       // is still 0.x, where 0.23 -> 0.24 carries exactly those breaks; drop it
       // once it reaches 1.0. The `^0.43.2` range in package.json is the other
       // half of this hold -- see lockFileMaintenance above, which this rule
