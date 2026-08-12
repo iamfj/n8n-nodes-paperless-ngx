@@ -295,6 +295,37 @@ describe('document execute', () => {
 		expect(optionsOf(notice.http).body).toEqual({});
 	});
 
+	it('clears the tags on an empty selection but not on the truncation notice alone', async () => {
+		const cleared = createFakeExecuteFunctions({
+			parameters: { documentId: 42, updateFields: { tags: [] } },
+		});
+		cleared.http.mockResolvedValue(ok({ id: 42 }));
+		await run(cleared, 'update');
+		expect(optionsOf(cleared.http).body).toEqual({ tags: [] });
+
+		const notice = createFakeExecuteFunctions({
+			parameters: { documentId: 42, updateFields: { tags: [TRUNCATED_OPTION_VALUE] } },
+		});
+		notice.http.mockResolvedValue(ok({ id: 42 }));
+		await run(notice, 'update');
+		expect(optionsOf(notice.http).body).toEqual({});
+	});
+
+	it('drops a tag filter whose only entry is the truncation notice', async () => {
+		const fake = createFakeExecuteFunctions({
+			parameters: {
+				returnAll: false,
+				limit: 1,
+				filters: { tags: [TRUNCATED_OPTION_VALUE] },
+			},
+		});
+		fake.http.mockResolvedValue(ok(documentsPageV10));
+
+		await run(fake, 'getMany');
+
+		expect(optionsOf(fake.http).qs).not.toHaveProperty('tags__id__all');
+	});
+
 	it('rejects an inherited Object.prototype key as an operation', () => {
 		expect(isDocumentOperation('constructor')).toBe(false);
 		expect(isDocumentOperation('toString')).toBe(false);
