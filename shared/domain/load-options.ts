@@ -26,7 +26,7 @@ export function chosenIds(raw: unknown): number[] | undefined {
 		.filter((entry) => isChosen(entry))
 		.map((entry) => Number(entry))
 		// `> 0` and not just an integer: `Number('')` and `Number(null)` are `0`,
-		// which no Paperless object ever has.
+		// so an unresolved entry would otherwise pass the filter as the ID `0`.
 		.filter((id) => Number.isInteger(id) && id > 0);
 	if (ids.length === 0 && raw.length > 0) {
 		return undefined;
