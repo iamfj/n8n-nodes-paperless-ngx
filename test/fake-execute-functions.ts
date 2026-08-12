@@ -1,8 +1,11 @@
 import type {
+	IDataObject,
 	IExecuteFunctions,
+	IHookFunctions,
 	ILoadOptionsFunctions,
 	INode,
 	INodeExecutionData,
+	IWebhookFunctions,
 } from 'n8n-workflow';
 import { vi } from 'vitest';
 
@@ -88,4 +91,60 @@ export function createFakeExecuteFunctions(
 	} as unknown as IExecuteFunctions & ILoadOptionsFunctions;
 
 	return { ctx, http };
+}
+
+/**
+ * The trigger's own seams: the activation hooks and the incoming webhook. A
+ * separate factory rather than more overrides on the one above, because
+ * `getNodeParameter` takes no item index here — the hook interfaces read
+ * `(name, fallback)` — and a shared implementation would hide that difference.
+ *
+ * `staticData` is handed back by reference on purpose: the hooks write into it,
+ * and a test asserting what activation stored is asserting on that object.
+ */
+export function createFakeHookFunctions(
+	overrides: {
+		credentials?: Record<string, unknown>;
+		node?: Partial<INode>;
+		parameters?: Record<string, unknown>;
+		staticData?: IDataObject;
+		/** `'manual'` is what n8n reports for a "Listen for test event" run. */
+		mode?: string;
+		webhookUrl?: string;
+		body?: IDataObject;
+		headers?: Record<string, string>;
+	} = {},
+) {
+	const http = vi.fn<(...args: unknown[]) => Promise<unknown>>();
+	const node: INode = {
+		...defaultNode,
+		name: 'Paperless-ngx Trigger',
+		type: 'n8n-nodes-paperless-ngx.paperlessNgxTrigger',
+		webhookId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+		...overrides.node,
+	};
+	const parameters = overrides.parameters ?? {};
+	const staticData: IDataObject = overrides.staticData ?? {};
+
+	const ctx = {
+		getNode: () => node,
+		getCredentials: vi.fn(async () => ({ ...defaultCredentials, ...overrides.credentials })),
+		getMode: vi.fn(() => overrides.mode ?? 'trigger'),
+		getActivationMode: vi.fn(() => 'activate'),
+		getWorkflowStaticData: vi.fn(() => staticData),
+		getNodeWebhookUrl: vi.fn(
+			() => overrides.webhookUrl ?? 'https://n8n.example.com/webhook/abc/webhook',
+		),
+		getNodeParameter: vi.fn((name: string, fallback?: unknown) =>
+			name in parameters ? parameters[name] : fallback,
+		),
+		getBodyData: vi.fn(() => overrides.body ?? {}),
+		getHeaderData: vi.fn(() => overrides.headers ?? {}),
+		helpers: {
+			httpRequestWithAuthentication: http,
+			returnJsonArray: (items: IDataObject[]) => items.map((json) => ({ json })),
+		},
+	} as unknown as IHookFunctions & IWebhookFunctions;
+
+	return { ctx, http, node, staticData };
 }
