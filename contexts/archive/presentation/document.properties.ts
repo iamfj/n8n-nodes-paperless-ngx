@@ -50,22 +50,6 @@ const documentId: INodeProperties = {
 
 const permissionFields: INodeProperties[] = [
 	{
-		displayName: 'Grant View to Group IDs',
-		name: 'viewGroups',
-		type: 'string',
-		default: '',
-		placeholder: '1,2',
-		description: 'Comma-separated group IDs allowed to view. Leave empty to leave unchanged.',
-	},
-	{
-		displayName: 'Grant View to User IDs',
-		name: 'viewUsers',
-		type: 'string',
-		default: '',
-		placeholder: '1,2',
-		description: 'Comma-separated user IDs allowed to view. Leave empty to leave unchanged.',
-	},
-	{
 		displayName: 'Grant Change to Group IDs',
 		name: 'changeGroups',
 		type: 'string',
@@ -80,6 +64,22 @@ const permissionFields: INodeProperties[] = [
 		default: '',
 		placeholder: '1,2',
 		description: 'Comma-separated user IDs allowed to change. Leave empty to leave unchanged.',
+	},
+	{
+		displayName: 'Grant View to Group IDs',
+		name: 'viewGroups',
+		type: 'string',
+		default: '',
+		placeholder: '1,2',
+		description: 'Comma-separated group IDs allowed to view. Leave empty to leave unchanged.',
+	},
+	{
+		displayName: 'Grant View to User IDs',
+		name: 'viewUsers',
+		type: 'string',
+		default: '',
+		placeholder: '1,2',
+		description: 'Comma-separated user IDs allowed to view. Leave empty to leave unchanged.',
 	},
 ];
 
@@ -175,6 +175,15 @@ export const documentFields: INodeProperties[] = [
 					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
+				displayName: 'Full Text Query',
+				name: 'query',
+				type: 'string',
+				default: '',
+				placeholder: 'correspondent:acme AND created:[2026 TO 2027]',
+				description:
+					'Advanced full-text query in Paperless-ngx query syntax. A different search engine from Text — the two can be combined but rarely should be.',
+			},
+			{
 				displayName: 'Sort By',
 				name: 'ordering',
 				type: 'options',
@@ -221,15 +230,6 @@ export const documentFields: INodeProperties[] = [
 				type: 'boolean',
 				default: false,
 				description: 'Whether the Text filter searches the title only instead of title and content',
-			},
-			{
-				displayName: 'Full Text Query',
-				name: 'query',
-				type: 'string',
-				default: '',
-				placeholder: 'correspondent:acme AND created:[2026 TO 2027]',
-				description:
-					'Advanced full-text query in Paperless-ngx query syntax. A different search engine from Text — the two can be combined but rarely should be.',
 			},
 		],
 	},
@@ -323,6 +323,7 @@ export const documentFields: INodeProperties[] = [
 				description:
 					'Document Type to assign; leaving it unselected removes the current one. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 			},
+			...permissionFields,
 			{
 				displayName: 'Owner ID',
 				name: 'owner',
@@ -357,7 +358,6 @@ export const documentFields: INodeProperties[] = [
 				default: '',
 				description: 'New title for the document',
 			},
-			...permissionFields,
 		],
 	},
 ];
