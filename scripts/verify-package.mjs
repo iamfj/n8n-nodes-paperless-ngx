@@ -38,9 +38,13 @@ for (const path of [...(pkg.n8n?.nodes ?? []), ...(pkg.n8n?.credentials ?? [])])
 
 // tsc emits neither the codex file nor the icons -- `n8n-node build` copies them.
 // If that ever stops, the node still loads, just without an icon and without the
-// documentation links, which is the kind of regression nobody notices.
+// documentation links, which is the kind of regression nobody notices. The codex
+// list is derived from `n8n.nodes` rather than written out again, so a node added
+// there cannot be forgotten here.
+const codexFiles = (pkg.n8n?.nodes ?? []).map((path) => path.replace(/\.js$/, '.json'));
+
 for (const path of [
-	'dist/nodes/PaperlessNgx/PaperlessNgx.node.json',
+	...codexFiles,
 	'dist/nodes/PaperlessNgx/paperless.svg',
 	'dist/nodes/PaperlessNgx/paperless.dark.svg',
 ]) {
