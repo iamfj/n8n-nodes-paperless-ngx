@@ -114,7 +114,13 @@ export class PaperlessNgxTrigger implements INodeType {
 		const expected = readState(this)?.signature;
 		const received = this.getHeaderData()[SIGNATURE_HEADER];
 
-		if (toBoolean(this.getNodeParameter('verifySignature', true), true) && received !== expected) {
+		if (
+			toBoolean(this.getNodeParameter('verifySignature', true), true) &&
+			// An absent stored signature is a rejection, not a free pass: with no state
+			// in this mode's slot both sides would be `undefined` and an unsigned call
+			// would compare equal.
+			(expected === undefined || received !== expected)
+		) {
 			// No `workflowData`, so nothing executes. Anyone can reach a webhook URL,
 			// and a workflow run is the thing worth withholding.
 			return { webhookResponse: { status: 'rejected' } };
