@@ -73,7 +73,7 @@ function triggerBody(event: PaperlessTriggerEvent, filters: TriggerFilters = {})
 	return {
 		type: TRIGGER_TYPE[event],
 		// Sent even when empty: Paperless treats a missing filter and a cleared one
-		// the same way, and an explicit value is what `sameTrigger` compares against.
+		// the same way, and an explicit value is what `matchesSpec` compares against.
 		filter_has_tags: filters.tags ?? [],
 		filter_has_correspondent: filters.correspondent ?? null,
 		filter_has_document_type: filters.documentType ?? null,
