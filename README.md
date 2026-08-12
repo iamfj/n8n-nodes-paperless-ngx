@@ -168,7 +168,7 @@ finished document rather than a task ID, so the next node can act on the real do
 ### Let an AI agent search the archive
 
 Connect a **Paperless-ngx** node to an AI Agent's *Tool* input and set it to **Document → Get Many**
-with the *Search* filter driven by the model. The agent then answers questions like "what did the
+with the *Filters → Text* filter driven by the model. The agent then answers questions like "what did the
 electrician invoice in March?" by searching your archive instead of guessing.
 
 Self-hosted instances need `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true` for the node to appear in
