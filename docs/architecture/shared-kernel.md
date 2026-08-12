@@ -196,13 +196,15 @@ rather than whatever the tree happens to hoist.
 
 `scripts/verify-package.mjs` asserts all of it — the peer range, the optional flag, the empty
 `dependencies`, and the presence of the entry points, codex file and both icons in the tarball. It
-runs in CI after the build and again in the publish workflow, since `n8n-node release` itself never
-inspects the tarball. The optional flag is the part with no other guard: nothing in lint or in the
+runs in CI after the build, again in `release.yml` before the publish, and once more from
+`prepublishOnly` — that last one on the pack npm is about to perform, so what it asserts is the
+tarball that ships. The optional flag is the part with no other guard: nothing in lint or in the
 type system notices its removal, and the symptom appears only on a stranger's manual install.
 
-`publishConfig.access` is not optional either: in CI, `n8n-node release` runs a bare `npm publish`
-(`@n8n/node-cli`, `dist/commands/release.js:37-46`), and a scoped package defaults to `restricted` —
-the first publish would fail with a 402.
+`publishConfig.access` is not optional either: `release.yml` runs a bare `npm publish` with no
+`--access` flag, and a scoped package defaults to `restricted` — the first publish would fail with a
+402. `provenance: true` sits in the same block and is what makes the published version carry an
+attestation, which is the first thing `@n8n/scan-community-package` asserts.
 
 ## Deliberately excluded
 
