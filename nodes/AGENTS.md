@@ -19,8 +19,11 @@ These are n8n's, not ours, and they outrank instinct:
 - camelCase property names. `required: true` on anything required.
 - `type: 'options'` with `typeOptions.loadOptionsMethod` for a list fetched at edit time (Tags,
   Correspondents); the method lives in the node's `methods.loadOptions` and returns
-  `{ name, value }[]`. Use `type: 'resourceLocator'` instead when the user may also paste an ID —
-  its `list` mode takes `typeOptions.searchListMethod`, resolved from `methods.listSearch`.
+  `{ name, value }[]`. Every picker in this node uses that form, named `<Thing> Name or ID` and
+  hinting at an expression — n8n's own core nodes do the same, and an expression is how an ID gets
+  pasted. `type: 'resourceLocator'` (`list` mode, `typeOptions.searchListMethod` from
+  `methods.listSearch`) is what a picker needs once the list stops fitting in one fetch; the
+  `TRUNCATED_OPTION_VALUE` notice is the interim answer, not a permanent one.
 
 Full reference: [node properties](https://docs.n8n.io/integrations/creating-nodes/build/reference/)
 and [UX guidelines](https://docs.n8n.io/integrations/creating-nodes/build/reference/ux-guidelines/).
