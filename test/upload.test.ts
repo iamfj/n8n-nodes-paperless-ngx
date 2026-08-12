@@ -177,6 +177,26 @@ describe('upload execute', () => {
 		await expect(run(fake)).rejects.toThrow('did not finish within 0 seconds');
 	});
 
+	it('finds its own task behind the other entries of an unfiltered list', async () => {
+		const fake = upload();
+		fake.http.mockResolvedValueOnce(ok(TASK_ID)).mockResolvedValueOnce(
+			ok({
+				count: 2,
+				next: null,
+				previous: null,
+				results: [
+					{ task_id: 'someone-else', status: 'started' },
+					{ task_id: TASK_ID, status: 'success', related_document_ids: [42] },
+				],
+			}),
+		);
+		fake.http.mockResolvedValueOnce(ok({ id: 42, title: 'Invoice' }));
+
+		const result = await run(fake);
+
+		expect(result[0].json).toMatchObject({ id: 42, taskId: TASK_ID });
+	});
+
 	it('drops a tag the truncation notice contributed rather than sending it', async () => {
 		const fake = upload({
 			waitForConsumption: false,

@@ -43,13 +43,14 @@ async function pollTask(
 			path: '/api/tasks/',
 			qs: { task_id: taskId },
 		});
-		const [first] = toTaskList(body);
 		// An empty list right after the upload is normal rather than an error: the
-		// worker has not necessarily written the task row yet. The ID is compared
-		// rather than trusted: an instance that ignores `task_id` answers with the
-		// whole unacknowledged list, and its newest entry may be someone else's.
-		const candidate = first === undefined ? undefined : normalizeConsumptionTask(version, first);
-		task = candidate?.taskId === taskId ? candidate : task;
+		// worker has not necessarily written the task row yet. The whole list is
+		// searched rather than its first entry: an instance that ignores `task_id`
+		// answers with every unacknowledged task, and ours is rarely the first.
+		const candidate = toTaskList(body)
+			.map((entry) => normalizeConsumptionTask(version, entry))
+			.find((entry) => entry.taskId === taskId);
+		task = candidate ?? task;
 
 		if (task && isTerminal(task.status)) {
 			return task;
