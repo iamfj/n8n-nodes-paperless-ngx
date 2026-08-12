@@ -57,3 +57,8 @@ That rule ships with `@n8n/node-cli`, so a local `n8n-node lint` only proves the
 plugin version this repo happens to have installed — keeping the CLI current is what keeps that
 proof worth anything. `@n8n/scan-community-package`, the vetting gate n8n runs on submission, is a
 separate check that cannot run against a working tree at all; see `docs/code-quality.md`.
+
+Staying current on the CLI is manual past a patch: `.github/renovate.json5` disables `major` and
+`minor` updates for `@n8n/node-cli`, because both carry node-API breaks while it is still 0.x. The
+bot proposes patches only; anything beyond that is a deliberate bump plus the caret in
+`package.json`.
