@@ -62,9 +62,6 @@ and OIDC is the path that survives it.
 
 ## Housekeeping
 
-- `release-please-config.json` carries `bootstrap-sha`, which tells release-please where to start
-  reading history because the repository had no tags. **Delete that key once the first
-  release-please PR has merged**; after that the last tag is the boundary.
 - `include-v-in-tag: false` and `include-component-in-tag: false` — the tag *is* the npm version,
   which is what the scan job passes to `@n8n/scan-community-package`, what the `'*.*.*'` trigger
   matches, and what the publish job asserts `package.json#version` equals. Both default the other
