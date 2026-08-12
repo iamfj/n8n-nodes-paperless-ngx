@@ -13,6 +13,11 @@ concurrency:
   group: ci-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+# Nothing here writes to the repository. Spelled out rather than inherited,
+# because the default token permission is a repo setting a future change can flip.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Node ${{ matrix.node-version }}
@@ -74,7 +79,7 @@ jobs:
 # `@n8n/scan-community-package` is deliberately absent here. Its CLI resolves a
 # package by name from the npm registry and unpacks the published tarball; it has
 # no local-directory mode, and its first check is npm provenance — which a branch
-# cannot have. It runs post-publish in publish.yml instead.
+# cannot have. It runs post-publish in release.yml instead.
 #
 # `npm run lint` is the pre-merge equivalent: @n8n/eslint-plugin-community-nodes
 # enforces n8n's verification rules across the whole repo, tests included.
