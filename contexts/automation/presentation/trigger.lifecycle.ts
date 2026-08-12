@@ -167,8 +167,9 @@ export async function createTriggerWorkflow(
 	ctx: IHookFunctions,
 	client: PaperlessClient,
 ): Promise<boolean> {
-	// A workflow left over from drift or from a failed delete still holds the
-	// name, which is unique in Paperless, so the POST below would answer 400.
+	// A workflow left over from drift or from a failed delete still holds the name
+	// `workflowName` builds, and that name is unique — so the POST below would be
+	// refused rather than replace it.
 	const stale = readState(ctx);
 	if (stale !== undefined) {
 		await removeWorkflow(client, stale);
