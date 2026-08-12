@@ -81,7 +81,7 @@ docs: explain API version pinning
 ```
 
 The changelog and version bump are generated from these, so the type and scope are
-what a release note reader ends up seeing.
+what a release note reader ends up seeing — `docs/release.md` covers how that happens.
 
 ## Dependency updates
 
