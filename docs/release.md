@@ -65,8 +65,13 @@ and OIDC is the path that survives it.
 - `release-please-config.json` carries `bootstrap-sha`, which tells release-please where to start
   reading history because the repository had no tags. **Delete that key once the first
   release-please PR has merged**; after that the last tag is the boundary.
-- `include-v-in-tag: false` — the tag *is* the npm version, which is what the scan job passes to
-  `@n8n/scan-community-package` and what the `'*.*.*'` trigger matches.
+- `include-v-in-tag: false` and `include-component-in-tag: false` — the tag *is* the npm version,
+  which is what the scan job passes to `@n8n/scan-community-package`, what the `'*.*.*'` trigger
+  matches, and what the publish job asserts `package.json#version` equals. Both default the other
+  way in manifest mode
+  ([manifest-releaser.md](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md)),
+  and the component is the package name with the scope stripped, so leaving the second one out tags
+  `n8n-nodes-paperless-ngx-0.2.0` and fails that assertion.
 - `bump-minor-pre-major: true` — pre-1.0, a stray `feat!` must not jump the package to `1.0.0`.
 - `pull-request-title-pattern` overrides release-please's default `chore(main): release …`: `main`
   is not in `commitlint.config.mjs`'s `scope-enum`, and a squash-merge makes the PR title the commit
