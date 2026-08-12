@@ -107,9 +107,10 @@ jobs:
         # Lint and build run automatically as part of the release process.
         #
         # `n8n-node release` detects GITHUB_ACTIONS and runs a bare `npm publish`
-        # with no --access flag. A scoped package defaults to restricted, so the
-        # first publish of @iamfj/… would fail with 402; package.json's
-        # publishConfig.access is what makes it public.
+        # with no --access flag (@n8n/node-cli, dist/commands/release.js:37-46).
+        # A scoped package defaults to restricted, so the first publish of
+        # @iamfj/… would fail with 402; package.json's publishConfig.access is
+        # what makes it public.
         #
         # Option A (OIDC): leave NPM_TOKEN unset — the token step is skipped and
         #   npm uses the OIDC exchange instead.
