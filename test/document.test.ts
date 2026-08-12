@@ -194,6 +194,25 @@ describe('document execute', () => {
 		expect(optionsOf(fake.http).qs).toMatchObject({ page_size: 1 });
 	});
 
+	it('reads a stringified toggle as the boolean it means', async () => {
+		const fake = createFakeExecuteFunctions({
+			parameters: {
+				returnAll: 'false',
+				limit: 1,
+				filters: { titleOnly: 'true', search: 'invoice' },
+				options: { includePermissions: 'false' },
+			},
+		});
+		fake.http.mockResolvedValue(ok(documentsPageV10));
+
+		await run(fake, 'getMany');
+
+		expect(fake.http).toHaveBeenCalledTimes(1);
+		const qs = optionsOf(fake.http).qs;
+		expect(qs).toMatchObject({ page_size: 1, title_search: 'invoice' });
+		expect(qs).not.toHaveProperty('full_perms');
+	});
+
 	it('keeps the full page size for a return-all walk', async () => {
 		const fake = createFakeExecuteFunctions({ parameters: { returnAll: true, filters: {} } });
 		fake.http.mockResolvedValue(ok(documentsPageV10));

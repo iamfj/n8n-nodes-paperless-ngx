@@ -1,6 +1,7 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { chosenIds, isChosen } from '../../../shared/domain/load-options';
 import { collect, paginate } from '../../../shared/domain/paginate';
+import { toBoolean } from '../../../shared/domain/parameters';
 import {
 	fullPermsQuery,
 	toPermissionsPatch,
@@ -41,7 +42,7 @@ function optionalText(raw: unknown): string | undefined {
 function toDocumentFilters(raw: IDataObject): DocumentFilters {
 	return {
 		search: optionalText(raw.search),
-		titleOnly: raw.titleOnly === true,
+		titleOnly: toBoolean(raw.titleOnly, false),
 		query: optionalText(raw.query),
 		correspondent: optionalId(raw.correspondent),
 		documentType: optionalId(raw.documentType),
@@ -99,7 +100,7 @@ async function get(
 	const document = await client.request<IDataObject>({
 		method: 'GET',
 		path: `/api/documents/${documentId}/`,
-		qs: fullPermsQuery(options.includePermissions === true),
+		qs: fullPermsQuery(toBoolean(options.includePermissions, false)),
 	});
 	return [{ json: document, pairedItem: { item: itemIndex } }];
 }
@@ -109,13 +110,13 @@ async function getMany(
 	itemIndex: number,
 	client: PaperlessClient,
 ): Promise<INodeExecutionData[]> {
-	const returnAll = ctx.getNodeParameter('returnAll', itemIndex, false) as boolean;
+	const returnAll = toBoolean(ctx.getNodeParameter('returnAll', itemIndex, false), false);
 	const limit = returnAll ? undefined : (ctx.getNodeParameter('limit', itemIndex, 50) as number);
 	const filters = ctx.getNodeParameter('filters', itemIndex, {}) as IDataObject;
 	const options = ctx.getNodeParameter('options', itemIndex, {}) as IDataObject;
 
 	const documentFilters = toDocumentFilters(filters);
-	const permsQuery = fullPermsQuery(options.includePermissions === true);
+	const permsQuery = fullPermsQuery(toBoolean(options.includePermissions, false));
 
 	const documents = await collect(
 		paginate<IDataObject>((page) =>
