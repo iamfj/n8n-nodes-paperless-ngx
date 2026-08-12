@@ -5,6 +5,7 @@ import {
 	workflowName,
 } from '../contexts/automation/domain/workflow';
 import { PaperlessNgxTrigger } from '../nodes/PaperlessNgx/PaperlessNgxTrigger.node';
+import { TRUNCATED_OPTION_VALUE } from '../shared/domain/load-options';
 import { createFakeHookFunctions } from './fake-execute-functions';
 import { headersV10 } from './fixtures/paperless';
 
@@ -131,6 +132,28 @@ describe('trigger activation', () => {
 			url: 'https://paperless.example.com/api/workflows/3/',
 		});
 		expect(requestOptions(fake.http, 3)).toMatchObject({ method: 'POST' });
+	});
+
+	it('refuses the truncation notice rather than provisioning an unfiltered workflow', async () => {
+		const fake = createFakeHookFunctions({
+			parameters: { event: 'documentAdded', filters: { tags: [TRUNCATED_OPTION_VALUE] } },
+		});
+
+		await expect(hooks.create.call(fake.ctx as IHookFunctions)).rejects.toThrow(
+			/Tags filter resolved to no usable ID/,
+		);
+		expect(fake.http).not.toHaveBeenCalled();
+	});
+
+	it('refuses a scalar filter an expression left as a name, which would go out as null', async () => {
+		const fake = createFakeHookFunctions({
+			parameters: { event: 'documentAdded', filters: { correspondent: 'Stadtwerke' } },
+		});
+
+		await expect(hooks.create.call(fake.ctx as IHookFunctions)).rejects.toThrow(
+			/Correspondent filter resolved to no usable ID/,
+		);
+		expect(fake.http).not.toHaveBeenCalled();
 	});
 
 	it('reports a token that may not write workflows instead of activating silently', async () => {
@@ -295,6 +318,15 @@ describe('trigger webhook', () => {
 		const fake = call({ headers: {} });
 
 		expect((await node.webhook.call(fake.ctx as IWebhookFunctions)).workflowData).toBeUndefined();
+	});
+
+	it('runs nothing when no signature was ever stored, so two undefineds cannot match', async () => {
+		const fake = call({ staticData: {}, headers: {} });
+
+		const result = await node.webhook.call(fake.ctx as IWebhookFunctions);
+
+		expect(result.workflowData).toBeUndefined();
+		expect(fake.http).not.toHaveBeenCalled();
 	});
 
 	it('accepts an unsigned call once verification is switched off', async () => {
