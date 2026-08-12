@@ -1,7 +1,8 @@
 // Renovate over Dependabot: this repo publishes to npm with a provenance
 // attestation, which makes the dependency pipeline itself a target. Dependabot
-// covers the basics -- it has had a `cooldown` setting since 2025 and has always
-// kept SHA-pinned actions current from their version comment. What it does not
+// covers the basics -- it has a `cooldown` setting, documented at
+// https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#cooldown-
+// -- and keeps SHA-pinned actions current from their version comment. What it does not
 // give is the rest of this file: an OpenSSF Scorecard in every PR body,
 // `lockFileMaintenance` for transitive dev CVEs no direct bump ever reaches, and
 // a dependency dashboard listing what is being held back and why.
@@ -35,7 +36,8 @@
   // shai-hulud class of attack -- stolen maintainer token, malicious version
   // published, credentials harvested from postinstall -- is typically caught and
   // yanked within hours. Waiting three days means the registry, not this repo,
-  // absorbs that window. `internalChecksFilter` is already Renovate's default;
+  // absorbs that window. `strict` is already Renovate's documented default for
+  // `internalChecksFilter` (https://docs.renovatebot.com/configuration-options/#internalchecksfilter);
   // it is written out so a change to that default cannot silently downgrade the
   // cooldown from a gate to a PR annotation.
   minimumReleaseAge: '3 days',
@@ -53,9 +55,12 @@
   // proposes them.
   //
   // The one hole in the cooldown: `minimumReleaseAge` does not apply to
-  // lockFileMaintenance -- npm resolves the tree, so a version published that
-  // morning can land in this PR. It is monthly; read its diff for versions
-  // younger than three days rather than the changelog links.
+  // lockFileMaintenance -- Renovate's update-type support matrix marks it
+  // unsupported because the package manager, not Renovate, resolves the tree
+  // (https://docs.renovatebot.com/key-concepts/minimum-release-age/#which-update-types-take-minimumreleaseage-into-account),
+  // so a version published that morning can land in this PR. It is monthly;
+  // read its diff for versions younger than three days rather than the
+  // changelog links.
   //
   // It also has no depName, so no packageRule below can match it -- the
   // `enabled: false` holds are unreachable from here, and only the range in
@@ -76,10 +81,12 @@
 
   vulnerabilityAlerts: {
     enabled: true,
-    // Both restate Renovate's own defaults for this object. They are spelled out
-    // because they are the exemption that matters: a known-exploited hole
-    // outranks the cooldown and the schedule, and a change to either default
-    // would otherwise leave a published fix sitting unproposed.
+    // Both restate this object's documented defaults -- `minimumReleaseAge: null`
+    // and an empty `schedule`, of which `at any time` is the spelled-out form
+    // (https://docs.renovatebot.com/configuration-options/#vulnerabilityalerts).
+    // They are written out because they are the exemption that matters: a
+    // known-exploited hole outranks the cooldown and the schedule, and a change
+    // to either default would otherwise leave a published fix sitting unproposed.
     minimumReleaseAge: null,
     schedule: ['at any time'],
     labels: ['security'],
