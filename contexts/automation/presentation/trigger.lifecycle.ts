@@ -1,6 +1,6 @@
 import type { IDataObject, IHookFunctions } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { chosenIds, isChosen, TRUNCATED_OPTION_VALUE } from '../../../shared/domain/load-options';
+import { chosenIds } from '../../../shared/domain/load-options';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
 import {
 	isTriggerEvent,
@@ -65,39 +65,48 @@ function optionalId(raw: unknown): number | undefined {
 }
 
 /**
- * A filter the user added and that resolved to no usable ID cannot be dropped:
- * the workflow would be provisioned with `filter_has_tags: []` and Paperless
- * would fire on every document. `loadTaxonomyOptions` appends the truncation
- * notice as a selectable option, so this is reachable from the dropdown alone.
+ * Called once a filter the user added has resolved to no usable ID, which cannot
+ * be dropped: the workflow would be provisioned with `filter_has_tags: []` or
+ * `filter_has_correspondent: null` and Paperless would fire on every document.
+ * `loadTaxonomyOptions` appends the truncation notice as a selectable option, and
+ * an expression yielding a name rather than an ID lands here too.
  */
 function rejectUnresolvable(ctx: IHookFunctions, raw: unknown, field: string): void {
-	const unusable = Array.isArray(raw)
-		? raw.length > 0 && chosenIds(raw) === undefined
-		: raw === TRUNCATED_OPTION_VALUE;
-	if (unusable) {
-		throw new NodeOperationError(ctx.getNode(), `The ${field} filter resolved to no usable ID`, {
-			description:
-				'The "more than …" entry a long list ends with is a notice, not a choice. Pick a real entry, or supply the ID with an expression.',
-		});
+	// A field never filled in, and the empty dropdown entry that clears one, are
+	// both "do not filter on this" rather than a selection that failed to resolve.
+	if (raw === undefined || raw === '' || (Array.isArray(raw) && raw.length === 0)) {
+		return;
 	}
+	throw new NodeOperationError(ctx.getNode(), `The ${field} filter resolved to no usable ID`, {
+		description:
+			'The "more than …" entry a long list ends with is a notice, not a choice. Pick a real entry, or supply the ID — not the name — with an expression.',
+	});
 }
 
 function toFilters(ctx: IHookFunctions, raw: IDataObject): TriggerFilters {
 	const filters: TriggerFilters = {};
-	rejectUnresolvable(ctx, raw.tags, 'Tags');
-	rejectUnresolvable(ctx, raw.correspondent, 'Correspondent');
-	rejectUnresolvable(ctx, raw.documentType, 'Document Type');
 
 	const tags = chosenIds(raw.tags);
-	if (tags?.length) {
+	if (tags === undefined) {
+		rejectUnresolvable(ctx, raw.tags, 'Tags');
+	} else if (tags.length > 0) {
 		filters.tags = tags;
 	}
-	if (isChosen(raw.correspondent)) {
-		filters.correspondent = optionalId(raw.correspondent);
+
+	const correspondent = optionalId(raw.correspondent);
+	if (correspondent === undefined) {
+		rejectUnresolvable(ctx, raw.correspondent, 'Correspondent');
+	} else {
+		filters.correspondent = correspondent;
 	}
-	if (isChosen(raw.documentType)) {
-		filters.documentType = optionalId(raw.documentType);
+
+	const documentType = optionalId(raw.documentType);
+	if (documentType === undefined) {
+		rejectUnresolvable(ctx, raw.documentType, 'Document Type');
+	} else {
+		filters.documentType = documentType;
 	}
+
 	if (typeof raw.filename === 'string' && raw.filename.length > 0) {
 		filters.filename = raw.filename;
 	}
