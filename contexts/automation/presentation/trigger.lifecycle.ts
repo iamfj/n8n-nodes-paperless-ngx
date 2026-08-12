@@ -1,6 +1,6 @@
 import type { IDataObject, IHookFunctions } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { chosenIds, isChosen } from '../../../shared/domain/load-options';
+import { chosenIds, isChosen, TRUNCATED_OPTION_VALUE } from '../../../shared/domain/load-options';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
 import {
 	isTriggerEvent,
@@ -64,8 +64,30 @@ function optionalId(raw: unknown): number | undefined {
 	return typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : undefined;
 }
 
-function toFilters(raw: IDataObject): TriggerFilters {
+/**
+ * A filter the user added and that resolved to no usable ID cannot be dropped:
+ * the workflow would be provisioned with `filter_has_tags: []` and Paperless
+ * would fire on every document. `loadTaxonomyOptions` appends the truncation
+ * notice as a selectable option, so this is reachable from the dropdown alone.
+ */
+function rejectUnresolvable(ctx: IHookFunctions, raw: unknown, field: string): void {
+	const unusable = Array.isArray(raw)
+		? raw.length > 0 && chosenIds(raw) === undefined
+		: raw === TRUNCATED_OPTION_VALUE;
+	if (unusable) {
+		throw new NodeOperationError(ctx.getNode(), `The ${field} filter resolved to no usable ID`, {
+			description:
+				'The "more than …" entry a long list ends with is a notice, not a choice. Pick a real entry, or supply the ID with an expression.',
+		});
+	}
+}
+
+function toFilters(ctx: IHookFunctions, raw: IDataObject): TriggerFilters {
 	const filters: TriggerFilters = {};
+	rejectUnresolvable(ctx, raw.tags, 'Tags');
+	rejectUnresolvable(ctx, raw.correspondent, 'Correspondent');
+	rejectUnresolvable(ctx, raw.documentType, 'Document Type');
+
 	const tags = chosenIds(raw.tags);
 	if (tags?.length) {
 		filters.tags = tags;
@@ -98,7 +120,7 @@ function triggerSpec(ctx: IHookFunctions, signature: string): TriggerSpec {
 		event: isTriggerEvent(event) ? event : 'documentAdded',
 		url,
 		signature,
-		filters: toFilters(ctx.getNodeParameter('filters', {}) as IDataObject),
+		filters: toFilters(ctx, ctx.getNodeParameter('filters', {}) as IDataObject),
 	};
 }
 
