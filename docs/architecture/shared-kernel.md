@@ -200,8 +200,9 @@ runs in CI after the build and again in the publish workflow, since `n8n-node re
 inspects the tarball. The optional flag is the part with no other guard: nothing in lint or in the
 type system notices its removal, and the symptom appears only on a stranger's manual install.
 
-`publishConfig.access` is not optional either: in CI, `n8n-node release` runs a bare `npm publish`,
-and a scoped package defaults to `restricted` — the first publish would fail with a 402.
+`publishConfig.access` is not optional either: in CI, `n8n-node release` runs a bare `npm publish`
+(`@n8n/node-cli`, `dist/commands/release.js:37-46`), and a scoped package defaults to `restricted` —
+the first publish would fail with a 402.
 
 ## Deliberately excluded
 
