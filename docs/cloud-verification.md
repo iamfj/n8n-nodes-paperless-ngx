@@ -11,7 +11,7 @@ repository check can cover. The requirements are read from n8n's two published p
 | Requirement | Enforced by | Evidence |
 | --- | --- | --- |
 | Zero runtime dependencies | `@n8n/community-nodes/no-runtime-dependencies` (ESLint) + `scripts/verify-package.mjs:50-53` | `package.json` has no `dependencies` key |
-| No `fs`, no `process.env` | `no-restricted-imports` (an allowlist that omits `fs`) and `no-restricted-globals` (which lists `process`) | all input arrives via node parameters and credentials |
+| No `fs`, no `process.env` | `@n8n/community-nodes/no-restricted-imports` (an allowlist that omits `fs`) and `@n8n/community-nodes/no-restricted-globals` (which lists `process`) | all input arrives via node parameters and credentials |
 | No install-time lifecycle scripts | `@n8n/community-nodes/no-forbidden-lifecycle-scripts` | git hooks install through `npm run hooks:install`, never `prepare` |
 | No secrets in source | `@n8n/community-nodes/no-hardcoded-secrets` | lints test fixtures too |
 | `n8n` strict mode | `n8n-node lint`, which byte-compares `eslint.config.mjs` against its template | `package.json#n8n.strict` is `true`; see `docs/code-quality.md` |
