@@ -1,4 +1,22 @@
 /**
+ * The ID a `resourceLocator` parameter carries, or `undefined` when it is empty.
+ *
+ * The `{ mode, value }` pair arrives whole rather than unwrapped: n8n's
+ * `extractValue` option only applies to a top-level `getNodeParameter` read, and
+ * every reference picker here sits inside a collection that is read as one object.
+ * A plain value passes through untouched, which is what the `id` mode produces
+ * once an expression has resolved it.
+ */
+export function locatorId(raw: unknown): number | undefined {
+	const value =
+		typeof raw === 'object' && raw !== null && 'value' in raw
+			? (raw as { value: unknown }).value
+			: raw;
+	const id = typeof value === 'string' ? Number.parseInt(value, 10) : value;
+	return typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : undefined;
+}
+
+/**
  * Value carried by the "more than N entries" notice a truncated dropdown appends.
  * n8n has no inert option — the notice is selectable — so it needs a value that
  * no execute path can mistake for a real one. `''` cannot be used: on Document →
