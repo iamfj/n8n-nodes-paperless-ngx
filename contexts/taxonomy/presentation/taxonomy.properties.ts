@@ -6,39 +6,49 @@ import {
 } from '../domain/taxonomy';
 
 export function taxonomyOperations(descriptor: TaxonomyDescriptor): INodePropertyOptions[] {
-	const singular = descriptor.displayName;
+	// n8n's UX guidelines put operation descriptions and actions in sentence case,
+	// so both interpolate the lowercased display name; only `name` stays title case.
+	const singular = descriptor.displayName.toLowerCase();
+	const plural = descriptor.pluralDisplayName.toLowerCase();
 	return [
 		{
 			name: 'Create',
 			value: 'create',
 			description: `Create a new ${singular}`,
-			action: `Create a ${singular.toLowerCase()}`,
+			action: `Create a ${singular}`,
 		},
 		{
 			name: 'Delete',
 			value: 'delete',
 			description: `Delete a ${singular}`,
-			action: `Delete a ${singular.toLowerCase()}`,
+			action: `Delete a ${singular}`,
 		},
 		{
 			name: 'Get',
 			value: 'get',
 			description: `Retrieve a single ${singular} by ID`,
-			action: `Get a ${singular.toLowerCase()}`,
+			action: `Get a ${singular}`,
 		},
 		{
 			name: 'Get Many',
 			value: 'getMany',
-			description: `List ${descriptor.pluralDisplayName}`,
-			action: `Get many ${descriptor.pluralDisplayName.toLowerCase()}`,
+			description: `List ${plural}`,
+			action: `Get many ${plural}`,
 		},
 		{
 			name: 'Update',
 			value: 'update',
 			description: `Change an existing ${singular}`,
-			action: `Update a ${singular.toLowerCase()}`,
+			action: `Update a ${singular}`,
 		},
 	];
+}
+
+// n8n's UX guidelines want a collection's entries in alphabetical order. These
+// lists are assembled from a descriptor rather than written out, so they are
+// sorted rather than hand-ordered.
+function sorted(properties: INodeProperties[]): INodeProperties[] {
+	return [...properties].sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
 function toProperty(field: TaxonomyField): INodeProperties {
@@ -79,6 +89,7 @@ const matchingFields: INodeProperties[] = [
 export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[] {
 	const resource = [descriptor.resource];
 	const singular = descriptor.displayName;
+	const lower = singular.toLowerCase();
 	const showFor = (operations: string[]) => ({ show: { resource, operation: operations } });
 	const extras = descriptor.extraFields.map(toProperty);
 
@@ -91,7 +102,7 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 			default: 0,
 			typeOptions: { minValue: 1 },
 			displayOptions: showFor(['get', 'update', 'delete']),
-			description: `ID of the ${singular}`,
+			description: `ID of the ${lower}`,
 		},
 		{
 			displayName: 'Name',
@@ -100,7 +111,7 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 			required: true,
 			default: '',
 			displayOptions: showFor(['create']),
-			description: `Name of the new ${singular}`,
+			description: `Name of the new ${lower}`,
 		},
 		// A required extra field (StoragePath's `path`) has to stand outside the
 		// collection: n8n only validates `required` on a top-level property, and a
@@ -119,7 +130,10 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 			placeholder: 'Add field',
 			default: {},
 			displayOptions: showFor(['create']),
-			options: [...extras.filter((field) => !isRequired(descriptor, field)), ...matchingFields],
+			options: sorted([
+				...extras.filter((field) => !isRequired(descriptor, field)),
+				...matchingFields,
+			]),
 		},
 		{
 			displayName: 'Update Fields',
@@ -128,17 +142,17 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 			placeholder: 'Add field',
 			default: {},
 			displayOptions: showFor(['update']),
-			options: [
+			options: sorted([
 				{
 					displayName: 'Name',
 					name: 'name',
 					type: 'string',
 					default: '',
-					description: `New name for the ${singular}`,
+					description: `New name for the ${lower}`,
 				},
 				...extras,
 				...matchingFields,
-			],
+			]),
 		},
 		{
 			displayName: 'Return All',
@@ -170,7 +184,7 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 					name: 'nameContains',
 					type: 'string',
 					default: '',
-					description: `Only ${descriptor.pluralDisplayName} whose name contains this text`,
+					description: `Only ${descriptor.pluralDisplayName.toLowerCase()} whose name contains this text`,
 				},
 			],
 		},

@@ -48,7 +48,7 @@ export const TAXONOMY: Record<TaxonomyResource, TaxonomyDescriptor> = {
 			{
 				name: 'color',
 				displayName: 'Color',
-				description: 'Colour shown behind the tag in the Paperless-ngx UI',
+				description: 'Color shown behind the tag in the Paperless-ngx UI',
 				type: 'color',
 				default: '#a6cee3',
 			},
