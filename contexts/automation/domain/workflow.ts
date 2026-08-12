@@ -36,7 +36,8 @@ export const SIGNATURE_HEADER = 'x-n8n-signature';
  * substituted into strings, so `docId` reaches n8n as text and is parsed back in
  * `normalizeTriggerEvent`. The same page marks `{{doc_id}}` and `{{doc_url}}` as
  * unavailable to the Consumption Started trigger, where no document row exists
- * yet — `text()` below is what turns the value they arrive with into "absent".
+ * yet: an unexpanded `{{doc_id}}` fails the `Number.parseInt` guard in
+ * `normalizeTriggerEvent`, and `{{doc_url}}` is dropped by `text()`.
  */
 export const WEBHOOK_PARAMS = {
 	docId: '{{doc_id}}',
