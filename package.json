@@ -29,7 +29,7 @@
     "lint": "n8n-node lint",
     "lint:fix": "n8n-node lint --fix",
     "release": "n8n-node release",
-    "prepublishOnly": "n8n-node prerelease",
+    "prepublishOnly": "n8n-node prerelease && node scripts/verify-package.mjs",
     "check": "biome check .",
     "test": "vitest run",
     "test:watch": "vitest",
