@@ -21,13 +21,16 @@ These are n8n's, not ours, and they outrank instinct:
 - camelCase property names. `required: true` on anything required.
 - Collection entries go in alphabetical order by `displayName`. Where the list is assembled from a
   descriptor rather than written out, sort it.
-- **Every single-value reference is a `type: 'resourceLocator'`**, built by `resourceLocator()` in
-  `shared/presentation/`. Its `list` mode names a `methods.listSearch` entry, which fetches one page
-  and returns a `paginationToken` — so the search runs on the server and nothing is capped. Its `id`
-  mode is where an expression or an AI agent puts a bare ID.
-- `type: 'multiOptions'` with `typeOptions.loadOptionsMethod` survives for **Tags alone**: n8n has
+- **Every single-value reference in the action node is a `type: 'resourceLocator'`**, built by
+  `resourceLocator()` in `shared/presentation/`. Its `list` mode names a `methods.listSearch` entry,
+  which fetches one page and returns a `paginationToken` — so the search runs on the server and
+  nothing is capped. Its `id` mode is where an expression or an AI agent puts a bare ID.
+- `type: 'multiOptions'` with `typeOptions.loadOptionsMethod` survives for **Tags**: n8n has
   no multi-value resourceLocator, and `loadOptions` gets no search term to pass on. That picker
   keeps the 500-entry cap and the `TRUNCATED_OPTION_VALUE` notice that makes the cap visible.
+- The trigger's Correspondent and Document Type filters are still single-value `options` pickers on
+  the same `loadOptions` methods, so they carry that cap too. Converting them is open work, not a
+  deliberate exception — a new reference field does not copy them.
 - Read a locator with `locatorId()`, or `requiredLocatorId()` where an empty one must not reach the
   URL. `getNodeParameter`'s `extractValue` does not help: every locator inside a collection arrives
   as part of one object.

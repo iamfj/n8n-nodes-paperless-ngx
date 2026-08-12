@@ -5,10 +5,11 @@ import { createClient } from '../../../shared/infrastructure/paperless-client';
 import type { TaxonomyDescriptor } from '../domain/taxonomy';
 
 /**
- * The last single-fetch dropdown in the node, and it exists only because Tags are
- * selected several at a time: n8n has no multi-value resourceLocator, and
- * `loadOptions` receives no search term to hand the server. Every single-value
- * picker moved to `taxonomy.list-search.ts`, which pages instead of capping.
+ * What is left of the single-fetch dropdowns: the Tags picker, which stays one
+ * because Tags are selected several at a time and n8n has no multi-value
+ * resourceLocator, and the trigger's two single-value filters, which are not yet
+ * converted. Everywhere else a reference is a `resourceLocator` reading
+ * `taxonomy.list-search.ts`, which pages instead of capping.
  *
  * A dropdown that silently truncates is worse than one that is slow, so the cap
  * is high enough to cover every real instance and is stated in the label of the
