@@ -9,8 +9,7 @@ the Paperless REST API to n8n workflows and AI agents. Paperless serves two live
 - Why the gates are what they are: `docs/code-quality.md`
 - Review protocol and its output format: `docs/review.md`
 - What a fix commit may touch: `docs/fix.md`
-- What n8n Cloud verification needs and who enforces it: `docs/cloud-verification.md`
-- How a version gets cut and published: `docs/release.md`
+- How a version gets cut and published, and what n8n verification asks for: `docs/release.md`
 
 `nodes/AGENTS.md` and `contexts/AGENTS.md` carry the rules specific to those folders.
 

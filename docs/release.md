@@ -53,8 +53,12 @@ the npm Trusted Publisher — owner `iamfj`, repo `n8n-nodes-paperless-ngx`, wor
 where the OIDC token minted by `id-token: write` is the credential and no secret exists to leak. If
 `NPM_TOKEN` is set, the step writes it to a `$RUNNER_TEMP` npmrc instead and deletes it on the way
 out. That branch exists because a Trusted Publisher cannot be configured for a package that does not
-exist yet, so the first publish goes through a token and the secret is deleted right after; see the
-runbook in `docs/cloud-verification.md`.
+exist yet
+([npm docs](https://docs.npmjs.com/cli/v11/commands/npm-trust/): "the package you're configuring must
+already exist"), so `0.1.0` went out on a token and the secret was deleted immediately after. Leave
+it deleted: npm is retiring direct publishing from 2FA-bypass tokens in January 2027
+([changelog](https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/)),
+and OIDC is the path that survives it.
 
 ## Housekeeping
 
@@ -73,4 +77,18 @@ runbook in `docs/cloud-verification.md`.
   `feat`, `fix`, `perf`, `revert`, `docs` and `refactor` are visible; the rest are hidden from the
   changelog.
 
-See `docs/cloud-verification.md` for what n8n requires of the published package.
+## n8n Cloud verification
+
+`npm run lint` and `npm run verify:package` enforce everything n8n's guidelines can be enforced from
+a repository — the four hard blockers in `AGENTS.md` are the ones that matter — and the `scan` job
+proves provenance landed on the published version. What no check here covers, and what a submission
+is judged on besides:
+
+- the npm account that publishes and the GitHub maintainer must be the same identity
+- English-only UI strings, documentation links in the codex, example workflows in the README
+- the node must not duplicate an already-verified integration
+
+Read the requirements from the source rather than a copy of it:
+[verification guidelines](https://docs.n8n.io/connect/create-nodes/build-your-node/reference/verification-guidelines)
+and [submit community nodes](https://docs.n8n.io/connect/create-nodes/deploy-your-node/submit-community-nodes).
+Submissions go through <https://creators.n8n.io/nodes>.
