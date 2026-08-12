@@ -104,7 +104,8 @@ describe('trigger activation', () => {
 		const fake = createFakeHookFunctions({
 			mode: 'manual',
 			parameters: { event: 'documentAdded' },
-			staticData: stored(),
+			// A different id from the created workflow's, so writing the wrong slot fails.
+			staticData: stored({ workflowId: 3 }),
 		});
 		fake.http.mockResolvedValue(ok(createdWorkflow));
 
@@ -112,7 +113,7 @@ describe('trigger activation', () => {
 
 		expect(requestOptions(fake.http).body?.name).toMatch(/\[test\]$/);
 		// The production slot is untouched: only `paperlessWorkflowTest` was written.
-		expect(fake.staticData.paperlessWorkflow).toMatchObject({ workflowId: 7 });
+		expect(fake.staticData.paperlessWorkflow).toMatchObject({ workflowId: 3 });
 		expect(fake.staticData.paperlessWorkflowTest).toMatchObject({ workflowId: 7 });
 	});
 
