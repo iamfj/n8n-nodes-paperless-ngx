@@ -2,6 +2,7 @@ import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-wor
 import { collect, paginate } from '../../../shared/domain/paginate';
 import { optionalBoolean, toBoolean } from '../../../shared/domain/parameters';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
+import { requiredLocatorId } from '../../../shared/presentation/resource-locator';
 import { type TaxonomyDescriptor, taxonomyBody } from '../domain/taxonomy';
 
 const PAGE_SIZE = 100;
@@ -96,7 +97,12 @@ export async function executeTaxonomy(
 		return results.map((json) => ({ json, pairedItem: { item: itemIndex } }));
 	}
 
-	const taxonomyId = ctx.getNodeParameter('taxonomyId', itemIndex) as number;
+	const taxonomyId = requiredLocatorId(
+		ctx.getNode(),
+		ctx.getNodeParameter('taxonomyId', itemIndex),
+		descriptor.displayName,
+		itemIndex,
+	);
 	const path = `${descriptor.endpoint}${taxonomyId}/`;
 
 	if (operation === 'get') {

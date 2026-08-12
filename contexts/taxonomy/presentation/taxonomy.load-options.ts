@@ -5,11 +5,14 @@ import { createClient } from '../../../shared/infrastructure/paperless-client';
 import type { TaxonomyDescriptor } from '../domain/taxonomy';
 
 /**
- * A dropdown that silently truncates is worse than one that is slow, but an
- * archive with tens of thousands of Correspondents would make the panel
- * unusable either way. The cap is high enough to cover every real instance and
- * is stated in the label of the last entry when it is hit, so the truncation is
- * never invisible.
+ * The last single-fetch dropdown in the node, and it exists only because Tags are
+ * selected several at a time: n8n has no multi-value resourceLocator, and
+ * `loadOptions` receives no search term to hand the server. Every single-value
+ * picker moved to `taxonomy.list-search.ts`, which pages instead of capping.
+ *
+ * A dropdown that silently truncates is worse than one that is slow, so the cap
+ * is high enough to cover every real instance and is stated in the label of the
+ * last entry when it is hit.
  */
 const MAX_OPTIONS = 500;
 const PAGE_SIZE = 100;

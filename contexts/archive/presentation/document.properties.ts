@@ -1,4 +1,5 @@
 import type { INodeProperties, INodePropertyOptions } from 'n8n-workflow';
+import { resourceLocator } from '../../../shared/presentation/resource-locator';
 
 const showFor = (operations: string[]) => ({
 	show: { resource: ['document'], operation: operations },
@@ -38,14 +39,14 @@ export const documentOperations: INodePropertyOptions[] = [
 ];
 
 const documentId: INodeProperties = {
-	displayName: 'Document ID',
-	name: 'documentId',
-	type: 'number',
-	required: true,
-	default: 0,
-	typeOptions: { minValue: 1 },
+	...resourceLocator({
+		displayName: 'Document',
+		name: 'documentId',
+		searchListMethod: 'searchDocuments',
+		description: 'The document to act on',
+		required: true,
+	}),
 	displayOptions: showFor(['get', 'download', 'update', 'delete']),
-	description: 'ID of the document',
 };
 
 const permissionFields: INodeProperties[] = [
@@ -142,15 +143,12 @@ export const documentFields: INodeProperties[] = [
 				default: 0,
 				description: 'Only the document carrying this ASN',
 			},
-			{
-				displayName: 'Correspondent Name or ID',
+			resourceLocator({
+				displayName: 'Correspondent',
 				name: 'correspondent',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getCorrespondents' },
-				default: '',
-				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-			},
+				searchListMethod: 'searchCorrespondents',
+				description: 'Only documents filed under this Correspondent',
+			}),
 			{
 				displayName: 'Created After',
 				name: 'createdAfter',
@@ -165,15 +163,12 @@ export const documentFields: INodeProperties[] = [
 				default: '',
 				description: 'Only documents whose creation date is before this date',
 			},
-			{
-				displayName: 'Document Type Name or ID',
+			resourceLocator({
+				displayName: 'Document Type',
 				name: 'documentType',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getDocumentTypes' },
-				default: '',
-				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-			},
+				searchListMethod: 'searchDocumentTypes',
+				description: 'Only documents carrying this Document Type',
+			}),
 			{
 				displayName: 'Full Text Query',
 				name: 'query',
@@ -199,15 +194,12 @@ export const documentFields: INodeProperties[] = [
 					{ name: 'Title (Z-A)', value: '-title' },
 				],
 			},
-			{
-				displayName: 'Storage Path Name or ID',
+			resourceLocator({
+				displayName: 'Storage Path',
 				name: 'storagePath',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getStoragePaths' },
-				default: '',
-				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-			},
+				searchListMethod: 'searchStoragePaths',
+				description: 'Only documents filed under this Storage Path',
+			}),
 			{
 				displayName: 'Tag Names or IDs',
 				name: 'tags',
@@ -298,15 +290,13 @@ export const documentFields: INodeProperties[] = [
 				description:
 					'The document’s OCR text, which Paperless-ngx indexes for search. Leaving it blank erases the existing text.',
 			},
-			{
-				displayName: 'Correspondent Name or ID',
+			resourceLocator({
+				displayName: 'Correspondent',
 				name: 'correspondent',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getCorrespondents' },
-				default: '',
+				searchListMethod: 'searchCorrespondents',
 				description:
-					'Correspondent to assign; leaving it unselected removes the current one. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
-			},
+					'Correspondent to assign. Adding the field but leaving it empty removes the current one.',
+			}),
 			{
 				displayName: 'Created',
 				name: 'created',
@@ -314,15 +304,13 @@ export const documentFields: INodeProperties[] = [
 				default: '',
 				description: 'The date the document itself was created, not the date it was consumed',
 			},
-			{
-				displayName: 'Document Type Name or ID',
+			resourceLocator({
+				displayName: 'Document Type',
 				name: 'documentType',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getDocumentTypes' },
-				default: '',
+				searchListMethod: 'searchDocumentTypes',
 				description:
-					'Document Type to assign; leaving it unselected removes the current one. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
-			},
+					'Document Type to assign. Adding the field but leaving it empty removes the current one.',
+			}),
 			...permissionFields,
 			{
 				displayName: 'Owner ID',
@@ -333,15 +321,13 @@ export const documentFields: INodeProperties[] = [
 				description:
 					'User ID to transfer ownership to. 0 removes the owner, which drops the document’s object-level permissions.',
 			},
-			{
-				displayName: 'Storage Path Name or ID',
+			resourceLocator({
+				displayName: 'Storage Path',
 				name: 'storagePath',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getStoragePaths' },
-				default: '',
+				searchListMethod: 'searchStoragePaths',
 				description:
-					'Storage Path to assign; leaving it unselected removes the current one. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
-			},
+					'Storage Path to assign. Adding the field but leaving it empty removes the current one.',
+			}),
 			{
 				displayName: 'Tag Names or IDs',
 				name: 'tags',

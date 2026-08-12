@@ -1,4 +1,5 @@
 import type { INodeProperties, INodePropertyOptions } from 'n8n-workflow';
+import { resourceLocator } from '../../../shared/presentation/resource-locator';
 
 const showFor = (operations: string[]) => ({
 	show: { resource: ['documentNote'], operation: operations },
@@ -30,14 +31,14 @@ export const noteOperations: INodePropertyOptions[] = [
 // (`nodes/AGENTS.md`).
 export const noteFields: INodeProperties[] = [
 	{
-		displayName: 'Document ID',
-		name: 'documentId',
-		type: 'number',
-		required: true,
-		default: 0,
-		typeOptions: { minValue: 1 },
+		...resourceLocator({
+			displayName: 'Document',
+			name: 'documentId',
+			searchListMethod: 'searchDocuments',
+			description: 'The document the note belongs to',
+			required: true,
+		}),
 		displayOptions: showFor(['getMany', 'create', 'delete']),
-		description: 'ID of the document the note belongs to',
 	},
 	{
 		displayName: 'Note',

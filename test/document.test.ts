@@ -143,7 +143,9 @@ describe('documentFileSpec', () => {
 
 describe('document execute', () => {
 	it('requests a single document and passes it straight through', async () => {
-		const fake = createFakeExecuteFunctions({ parameters: { documentId: 42, options: {} } });
+		const fake = createFakeExecuteFunctions({
+			parameters: { documentId: { mode: 'list', value: '42' }, options: {} },
+		});
 		fake.http.mockResolvedValue(ok({ id: 42, title: 'Invoice' }));
 
 		const result = await run(fake, 'get');
@@ -260,7 +262,11 @@ describe('document execute', () => {
 
 	it('downloads into the named binary field and keeps the served file name', async () => {
 		const fake = createFakeExecuteFunctions({
-			parameters: { documentId: 42, file: 'original', binaryPropertyName: 'file' },
+			parameters: {
+				documentId: { mode: 'list', value: '42' },
+				file: 'original',
+				binaryPropertyName: 'file',
+			},
 		});
 		fake.http.mockResolvedValue({
 			statusCode: 200,
@@ -314,20 +320,37 @@ describe('document execute', () => {
 		});
 	});
 
-	it('clears a Correspondent on an empty selection but not on the truncation notice', async () => {
+	it('assigns the Correspondent a picker selected, and clears it on an empty one', async () => {
+		const assigned = createFakeExecuteFunctions({
+			parameters: {
+				documentId: { mode: 'list', value: '42' },
+				updateFields: { correspondent: { mode: 'list', value: '3' } },
+			},
+		});
+		assigned.http.mockResolvedValue(ok({ id: 42 }));
+		await run(assigned, 'update');
+		expect(optionsOf(assigned.http).body).toEqual({ correspondent: 3 });
+
+		// The field added but left empty is how a Correspondent is removed; the
+		// field never added at all leaves it alone, which is the case above.
 		const cleared = createFakeExecuteFunctions({
-			parameters: { documentId: 42, updateFields: { correspondent: '' } },
+			parameters: {
+				documentId: { mode: 'list', value: '42' },
+				updateFields: { correspondent: { mode: 'list', value: '' } },
+			},
 		});
 		cleared.http.mockResolvedValue(ok({ id: 42 }));
 		await run(cleared, 'update');
 		expect(optionsOf(cleared.http).body).toEqual({ correspondent: null });
+	});
 
-		const notice = createFakeExecuteFunctions({
-			parameters: { documentId: 42, updateFields: { correspondent: TRUNCATED_OPTION_VALUE } },
+	it('refuses to build a URL from an empty Document picker', async () => {
+		const fake = createFakeExecuteFunctions({
+			parameters: { documentId: { mode: 'list', value: '' }, options: {} },
 		});
-		notice.http.mockResolvedValue(ok({ id: 42 }));
-		await run(notice, 'update');
-		expect(optionsOf(notice.http).body).toEqual({});
+
+		await expect(run(fake, 'get')).rejects.toThrow(/No Document was selected/);
+		expect(fake.http).not.toHaveBeenCalled();
 	});
 
 	it('clears the tags on an empty selection but not on the truncation notice alone', async () => {
@@ -353,6 +376,27 @@ describe('document execute', () => {
 		fake.http.mockResolvedValue(ok({ id: 42 }));
 		await run(fake, 'update');
 		expect(optionsOf(fake.http).body).toEqual({});
+	});
+
+	it('reads the reference filters out of their pickers', async () => {
+		const fake = createFakeExecuteFunctions({
+			parameters: {
+				returnAll: false,
+				limit: 1,
+				filters: {
+					correspondent: { mode: 'list', value: '3' },
+					documentType: { mode: 'id', value: '1' },
+					storagePath: { mode: 'list', value: '' },
+				},
+			},
+		});
+		fake.http.mockResolvedValue(ok(documentsPageV10));
+
+		await run(fake, 'getMany');
+
+		const qs = optionsOf(fake.http).qs;
+		expect(qs).toMatchObject({ correspondent__id: 3, document_type__id: 1 });
+		expect(qs).not.toHaveProperty('storage_path__id');
 	});
 
 	it('drops a tag filter whose only entry is the truncation notice', async () => {

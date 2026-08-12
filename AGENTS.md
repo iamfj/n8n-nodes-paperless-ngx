@@ -20,6 +20,7 @@ nodes/          n8n node classes          may import n8n-workflow
 credentials/    credential classes        may import n8n-workflow
 shared/domain/  pure TypeScript           MUST NOT import n8n-workflow
 shared/infrastructure/  HTTP + n8n adapter        may import n8n-workflow
+shared/presentation/    node-property helpers     may import n8n-workflow
 contexts/<name>/  one bounded context     may import shared/**, NEVER another context
 ```
 

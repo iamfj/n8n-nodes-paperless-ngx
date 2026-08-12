@@ -16,6 +16,7 @@ import {
 	executeDocument,
 	isDocumentOperation,
 } from '../../contexts/archive/presentation/document.execute';
+import { searchDocuments as findDocuments } from '../../contexts/archive/presentation/document.list-search';
 import {
 	documentFields,
 	documentOperations,
@@ -32,6 +33,7 @@ import {
 	executeTaxonomy,
 	isTaxonomyOperation,
 } from '../../contexts/taxonomy/presentation/taxonomy.execute';
+import { searchTaxonomy } from '../../contexts/taxonomy/presentation/taxonomy.list-search';
 import { loadTaxonomyOptions } from '../../contexts/taxonomy/presentation/taxonomy.load-options';
 import {
 	taxonomyFields,
@@ -113,16 +115,47 @@ export class PaperlessNgx implements INodeType {
 	};
 
 	methods = {
+		// One entry per resourceLocator `searchListMethod`. Each fetches a single
+		// page and hands n8n a token for the next, so the search runs on the server
+		// and the list is never capped.
+		listSearch: {
+			async searchCorrespondents(
+				this: ILoadOptionsFunctions,
+				filter?: string,
+				paginationToken?: string,
+			) {
+				return await searchTaxonomy(this, TAXONOMY.correspondent, filter, paginationToken);
+			},
+			async searchDocumentTypes(
+				this: ILoadOptionsFunctions,
+				filter?: string,
+				paginationToken?: string,
+			) {
+				return await searchTaxonomy(this, TAXONOMY.documentType, filter, paginationToken);
+			},
+			async searchStoragePaths(
+				this: ILoadOptionsFunctions,
+				filter?: string,
+				paginationToken?: string,
+			) {
+				return await searchTaxonomy(this, TAXONOMY.storagePath, filter, paginationToken);
+			},
+			async searchTags(this: ILoadOptionsFunctions, filter?: string, paginationToken?: string) {
+				return await searchTaxonomy(this, TAXONOMY.tag, filter, paginationToken);
+			},
+			async searchDocuments(
+				this: ILoadOptionsFunctions,
+				filter?: string,
+				paginationToken?: string,
+			) {
+				return await findDocuments(this, filter, paginationToken);
+			},
+		},
+
+		// Tags are the one reference the node still selects several at a time, and
+		// n8n has no multi-value resourceLocator — so this picker keeps the
+		// single-fetch dropdown, cap and truncation notice that go with it.
 		loadOptions: {
-			async getCorrespondents(this: ILoadOptionsFunctions) {
-				return await loadTaxonomyOptions(this, TAXONOMY.correspondent);
-			},
-			async getDocumentTypes(this: ILoadOptionsFunctions) {
-				return await loadTaxonomyOptions(this, TAXONOMY.documentType);
-			},
-			async getStoragePaths(this: ILoadOptionsFunctions) {
-				return await loadTaxonomyOptions(this, TAXONOMY.storagePath);
-			},
 			async getTags(this: ILoadOptionsFunctions) {
 				return await loadTaxonomyOptions(this, TAXONOMY.tag);
 			},

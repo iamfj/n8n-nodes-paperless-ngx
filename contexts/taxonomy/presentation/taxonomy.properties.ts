@@ -1,4 +1,5 @@
 import type { INodeProperties, INodePropertyOptions } from 'n8n-workflow';
+import { resourceLocator } from '../../../shared/presentation/resource-locator';
 import {
 	MATCHING_ALGORITHMS,
 	type TaxonomyDescriptor,
@@ -95,14 +96,14 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 
 	return [
 		{
-			displayName: `${singular} ID`,
-			name: 'taxonomyId',
-			type: 'number',
-			required: true,
-			default: 0,
-			typeOptions: { minValue: 1 },
+			...resourceLocator({
+				displayName: singular,
+				name: 'taxonomyId',
+				searchListMethod: descriptor.listSearchMethod,
+				description: `The ${lower} to act on`,
+				required: true,
+			}),
 			displayOptions: showFor(['get', 'update', 'delete']),
-			description: `ID of the ${lower}`,
 		},
 		{
 			displayName: 'Name',

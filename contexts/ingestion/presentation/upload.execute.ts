@@ -1,6 +1,6 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError, sleep } from 'n8n-workflow';
-import { chosenIds } from '../../../shared/domain/load-options';
+import { chosenIds, locatorId } from '../../../shared/domain/load-options';
 import { toBoolean } from '../../../shared/domain/parameters';
 import { readBinaryInput, toFormData } from '../../../shared/infrastructure/binary';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
@@ -93,9 +93,9 @@ export async function executeUpload(
 		{
 			title: optionalText(fields.title),
 			created: optionalDate(fields.created),
-			correspondent: optionalId(fields.correspondent),
-			document_type: optionalId(fields.documentType),
-			storage_path: optionalId(fields.storagePath),
+			correspondent: locatorId(fields.correspondent),
+			document_type: locatorId(fields.documentType),
+			storage_path: locatorId(fields.storagePath),
 			archive_serial_number: optionalId(fields.archiveSerialNumber),
 			tags: chosenIds(fields.tags),
 		},

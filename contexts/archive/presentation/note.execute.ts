@@ -1,5 +1,6 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
+import { requiredLocatorId } from '../../../shared/presentation/resource-locator';
 
 // The notes action is not paginated (`pagination_class=None` upstream) and every
 // method — GET, POST and DELETE alike — answers with the document's full notes
@@ -46,7 +47,12 @@ export async function executeNote(
 	client: PaperlessClient,
 	operation: NoteOperation,
 ): Promise<INodeExecutionData[]> {
-	const documentId = ctx.getNodeParameter('documentId', itemIndex) as number;
+	const documentId = requiredLocatorId(
+		ctx.getNode(),
+		ctx.getNodeParameter('documentId', itemIndex),
+		'Document',
+		itemIndex,
+	);
 	const notes = await client.request<Note[]>(requestFor(ctx, itemIndex, operation, documentId));
 
 	if (operation === 'delete') {
