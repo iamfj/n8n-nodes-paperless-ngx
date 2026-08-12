@@ -15,7 +15,7 @@ export function isChosen(raw: unknown): boolean {
  * The IDs a multi-select carries, or `undefined` when nothing was chosen. A
  * selection of nothing but the truncation notice is not an empty selection:
  * dropping the notice alone would leave `[]`, which clears a document's tags on
- * Update and widens a Get Many filter to the whole archive.
+ * Update.
  */
 export function chosenIds(raw: unknown): number[] | undefined {
 	if (!Array.isArray(raw)) {
