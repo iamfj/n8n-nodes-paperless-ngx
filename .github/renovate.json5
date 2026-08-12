@@ -65,7 +65,7 @@
   // It also has no depName, so no packageRule below can match it -- the
   // `enabled: false` holds are unreachable from here, and only the range in
   // package.json bounds what a re-resolve may pick. That is why @n8n/node-cli
-  // carries `^0.43.2` rather than the `*` the scaffold shipped: within a 0.x
+  // carries `^0.44.1` rather than the `*` the scaffold shipped: within a 0.x
   // caret it can move by patch, which is exactly what its rule allows anyway.
   //
   // n8n-workflow cannot be bounded the same way -- `valid-peer-dependencies`
@@ -120,7 +120,7 @@
       // it for `build`, `lint` and the `prerelease` guard in prepublishOnly --
       // the three places a break would surface. Minor is listed too because the package
       // is still 0.x, where 0.23 -> 0.24 carries exactly those breaks; drop it
-      // once it reaches 1.0. The `^0.43.2` range in package.json is the other
+      // once it reaches 1.0. The `^0.44.1` range in package.json is the other
       // half of this hold -- see lockFileMaintenance above, which this rule
       // cannot reach.
       matchPackageNames: ['@n8n/node-cli'],
