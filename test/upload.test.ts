@@ -58,6 +58,18 @@ describe('upload execute', () => {
 		expect(options.headers).not.toHaveProperty('Content-Type');
 	});
 
+	it('truncates created to a date, which is all Django DateField accepts', async () => {
+		const fake = upload({
+			waitForConsumption: false,
+			additionalFields: { created: '2026-04-01T18:02:57.104Z' },
+		});
+		fake.http.mockResolvedValue(ok(TASK_ID));
+
+		await run(fake);
+
+		expect((optionsOf(fake.http).body as FormData).get('created')).toBe('2026-04-01');
+	});
+
 	it('returns the task ID without polling when the wait is switched off', async () => {
 		const fake = upload({ waitForConsumption: false });
 		fake.http.mockResolvedValue(ok(TASK_ID));

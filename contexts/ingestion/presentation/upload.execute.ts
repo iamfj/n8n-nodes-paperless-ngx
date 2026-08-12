@@ -28,6 +28,15 @@ function optionalText(raw: unknown): string | undefined {
 	return typeof raw === 'string' && raw.length > 0 ? raw : undefined;
 }
 
+/**
+ * `created` is validated by Django's `DateField`, which answers 400 for the full
+ * ISO 8601 timestamp an n8n `dateTime` property produces — the same reason
+ * `contexts/archive/domain/document.ts` truncates it on PATCH.
+ */
+function optionalDate(raw: unknown): string | undefined {
+	return optionalText(raw)?.slice(0, 10);
+}
+
 async function pollTask(
 	client: PaperlessClient,
 	taskId: string,
@@ -79,7 +88,7 @@ export async function executeUpload(
 	const form = toFormData(
 		{
 			title: optionalText(fields.title),
-			created: optionalText(fields.created),
+			created: optionalDate(fields.created),
 			correspondent: optionalId(fields.correspondent),
 			document_type: optionalId(fields.documentType),
 			storage_path: optionalId(fields.storagePath),
