@@ -72,8 +72,9 @@ function optionalId(raw: unknown): number | undefined {
  * an expression yielding a name rather than an ID lands here too.
  */
 function rejectUnresolvable(ctx: IHookFunctions, raw: unknown, field: string): void {
-	// A field never filled in, and the empty dropdown entry that clears one, are
-	// both "do not filter on this" rather than a selection that failed to resolve.
+	// A field never added to the collection, and one added but left at the default
+	// the option declares in `trigger.properties.ts` (`''` or `[]`), are both "do
+	// not filter on this" rather than a selection that failed to resolve.
 	if (raw === undefined || raw === '' || (Array.isArray(raw) && raw.length === 0)) {
 		return;
 	}
