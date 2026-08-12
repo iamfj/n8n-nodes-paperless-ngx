@@ -38,7 +38,11 @@ describe('upload execute', () => {
 	it('posts the file as multipart with the metadata as form fields', async () => {
 		const fake = upload({
 			waitForConsumption: false,
-			additionalFields: { title: 'Invoice', correspondent: 3, tags: [5, 8] },
+			additionalFields: {
+				title: 'Invoice',
+				correspondent: { mode: 'list', value: '3' },
+				tags: [5, 8],
+			},
 		});
 		fake.http.mockResolvedValue(ok(TASK_ID));
 

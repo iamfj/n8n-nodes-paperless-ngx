@@ -17,6 +17,8 @@ export type TaxonomyDescriptor = {
 	displayName: string;
 	pluralDisplayName: string;
 	endpoint: string;
+	/** The `methods.listSearch` entry the resource's pickers are wired to. */
+	listSearchMethod: string;
 	/** Writable fields beyond the `MatchingModel` set every resource shares. */
 	extraFields: readonly TaxonomyField[];
 };
@@ -37,6 +39,7 @@ export const TAXONOMY: Record<TaxonomyResource, TaxonomyDescriptor> = {
 		displayName: 'Correspondent',
 		pluralDisplayName: 'Correspondents',
 		endpoint: '/api/correspondents/',
+		listSearchMethod: 'searchCorrespondents',
 		extraFields: [],
 	},
 	tag: {
@@ -44,6 +47,7 @@ export const TAXONOMY: Record<TaxonomyResource, TaxonomyDescriptor> = {
 		displayName: 'Tag',
 		pluralDisplayName: 'Tags',
 		endpoint: '/api/tags/',
+		listSearchMethod: 'searchTags',
 		extraFields: [
 			{
 				name: 'color',
@@ -59,6 +63,7 @@ export const TAXONOMY: Record<TaxonomyResource, TaxonomyDescriptor> = {
 		displayName: 'Document Type',
 		pluralDisplayName: 'Document Types',
 		endpoint: '/api/document_types/',
+		listSearchMethod: 'searchDocumentTypes',
 		extraFields: [],
 	},
 	storagePath: {
@@ -66,6 +71,7 @@ export const TAXONOMY: Record<TaxonomyResource, TaxonomyDescriptor> = {
 		displayName: 'Storage Path',
 		pluralDisplayName: 'Storage Paths',
 		endpoint: '/api/storage_paths/',
+		listSearchMethod: 'searchStoragePaths',
 		extraFields: [
 			{
 				name: 'path',

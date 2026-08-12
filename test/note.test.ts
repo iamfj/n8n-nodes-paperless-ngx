@@ -21,7 +21,9 @@ async function run(fake: Fake, operation: Parameters<typeof executeNote>[3]) {
 
 describe('note execute', () => {
 	it('lists the notes on a document, one item each', async () => {
-		const fake = createFakeExecuteFunctions({ parameters: { documentId: 42 } });
+		const fake = createFakeExecuteFunctions({
+			parameters: { documentId: { mode: 'list', value: '42' } },
+		});
 		fake.http.mockResolvedValue(ok(notes));
 
 		const result = await run(fake, 'getMany');
@@ -34,7 +36,9 @@ describe('note execute', () => {
 	});
 
 	it('posts the note text and returns the resulting list', async () => {
-		const fake = createFakeExecuteFunctions({ parameters: { documentId: 42, note: 'Filed' } });
+		const fake = createFakeExecuteFunctions({
+			parameters: { documentId: { mode: 'list', value: '42' }, note: 'Filed' },
+		});
 		fake.http.mockResolvedValue(ok(notes));
 
 		const result = await run(fake, 'create');
@@ -69,7 +73,9 @@ describe('note execute', () => {
 	});
 
 	it('does not lose an unexpected body shape', async () => {
-		const fake = createFakeExecuteFunctions({ parameters: { documentId: 42 } });
+		const fake = createFakeExecuteFunctions({
+			parameters: { documentId: { mode: 'list', value: '42' } },
+		});
 		fake.http.mockResolvedValue(ok({ detail: 'Insufficient permissions' }));
 
 		const result = await run(fake, 'getMany');

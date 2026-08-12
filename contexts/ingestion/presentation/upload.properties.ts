@@ -1,4 +1,5 @@
 import type { INodeProperties, INodePropertyOptions } from 'n8n-workflow';
+import { resourceLocator } from '../../../shared/presentation/resource-locator';
 
 const showFor = (operations: string[]) => ({
 	show: { resource: ['document'], operation: operations },
@@ -60,15 +61,12 @@ export const uploadFields: INodeProperties[] = [
 				default: 0,
 				description: 'ASN to assign to the new document. Must be unique across the archive.',
 			},
-			{
-				displayName: 'Correspondent Name or ID',
+			resourceLocator({
+				displayName: 'Correspondent',
 				name: 'correspondent',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getCorrespondents' },
-				default: '',
-				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-			},
+				searchListMethod: 'searchCorrespondents',
+				description: 'Correspondent to file the new document under',
+			}),
 			{
 				displayName: 'Created',
 				name: 'created',
@@ -77,24 +75,18 @@ export const uploadFields: INodeProperties[] = [
 				description:
 					'The date the document itself was created. Paperless-ngx infers one if omitted.',
 			},
-			{
-				displayName: 'Document Type Name or ID',
+			resourceLocator({
+				displayName: 'Document Type',
 				name: 'documentType',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getDocumentTypes' },
-				default: '',
-				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-			},
-			{
-				displayName: 'Storage Path Name or ID',
+				searchListMethod: 'searchDocumentTypes',
+				description: 'Document Type to assign to the new document',
+			}),
+			resourceLocator({
+				displayName: 'Storage Path',
 				name: 'storagePath',
-				type: 'options',
-				typeOptions: { loadOptionsMethod: 'getStoragePaths' },
-				default: '',
-				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-			},
+				searchListMethod: 'searchStoragePaths',
+				description: 'Storage Path to file the new document under',
+			}),
 			{
 				displayName: 'Tag Names or IDs',
 				name: 'tags',

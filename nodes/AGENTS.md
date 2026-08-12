@@ -19,13 +19,18 @@ These are n8n's, not ours, and they outrank instinct:
 - **Return the items, not the envelope.** Paperless is Django REST Framework, so a list endpoint
   answers `{ results: [...], count: n }`. Return the contents of `results`.
 - camelCase property names. `required: true` on anything required.
-- `type: 'options'` with `typeOptions.loadOptionsMethod` for a list fetched at edit time (Tags,
-  Correspondents); the method lives in the node's `methods.loadOptions` and returns
-  `{ name, value }[]`. Every picker in this node uses that form, named `<Thing> Name or ID` and
-  hinting at an expression — n8n's own core nodes do the same, and an expression is how an ID gets
-  pasted. `type: 'resourceLocator'` (`list` mode, `typeOptions.searchListMethod` from
-  `methods.listSearch`) is what a picker needs once the list stops fitting in one fetch; the
-  `TRUNCATED_OPTION_VALUE` notice is the interim answer, not a permanent one.
+- Collection entries go in alphabetical order by `displayName`. Where the list is assembled from a
+  descriptor rather than written out, sort it.
+- **Every single-value reference is a `type: 'resourceLocator'`**, built by `resourceLocator()` in
+  `shared/presentation/`. Its `list` mode names a `methods.listSearch` entry, which fetches one page
+  and returns a `paginationToken` — so the search runs on the server and nothing is capped. Its `id`
+  mode is where an expression or an AI agent puts a bare ID.
+- `type: 'multiOptions'` with `typeOptions.loadOptionsMethod` survives for **Tags alone**: n8n has
+  no multi-value resourceLocator, and `loadOptions` gets no search term to pass on. That picker
+  keeps the 500-entry cap and the `TRUNCATED_OPTION_VALUE` notice that makes the cap visible.
+- Read a locator with `locatorId()`, or `requiredLocatorId()` where an empty one must not reach the
+  URL. `getNodeParameter`'s `extractValue` does not help: every locator inside a collection arrives
+  as part of one object.
 
 Full reference: [node properties](https://docs.n8n.io/integrations/creating-nodes/build/reference/)
 and [UX guidelines](https://docs.n8n.io/integrations/creating-nodes/build/reference/ux-guidelines/).

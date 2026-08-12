@@ -142,7 +142,9 @@ describe('taxonomy execute', () => {
 	});
 
 	it('reads one entry by ID', async () => {
-		const fake = createFakeExecuteFunctions({ parameters: { taxonomyId: 4 } });
+		const fake = createFakeExecuteFunctions({
+			parameters: { taxonomyId: { mode: 'list', value: '4' } },
+		});
 		fake.http.mockResolvedValue(ok({ id: 4, name: 'Invoice' }));
 
 		const result = await run(fake, TAXONOMY.documentType, 'get');
@@ -154,7 +156,7 @@ describe('taxonomy execute', () => {
 
 	it('PATCHes only the supplied fields on update', async () => {
 		const fake = createFakeExecuteFunctions({
-			parameters: { taxonomyId: 5, updateFields: { color: '#ff0000' } },
+			parameters: { taxonomyId: { mode: 'id', value: '5' }, updateFields: { color: '#ff0000' } },
 		});
 		fake.http.mockResolvedValue(ok({ id: 5 }));
 

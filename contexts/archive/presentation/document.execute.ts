@@ -1,5 +1,5 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { chosenIds, isChosen } from '../../../shared/domain/load-options';
+import { chosenIds, isChosen, locatorId } from '../../../shared/domain/load-options';
 import { collect, paginate } from '../../../shared/domain/paginate';
 import { toBoolean } from '../../../shared/domain/parameters';
 import {
@@ -9,6 +9,7 @@ import {
 } from '../../../shared/domain/permissions';
 import { toBinaryData } from '../../../shared/infrastructure/binary';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
+import { requiredLocatorId } from '../../../shared/presentation/resource-locator';
 import {
 	type DocumentFile,
 	type DocumentFilters,
@@ -44,9 +45,9 @@ function toDocumentFilters(raw: IDataObject): DocumentFilters {
 		search: optionalText(raw.search),
 		titleOnly: toBoolean(raw.titleOnly, false),
 		query: optionalText(raw.query),
-		correspondent: optionalId(raw.correspondent),
-		documentType: optionalId(raw.documentType),
-		storagePath: optionalId(raw.storagePath),
+		correspondent: locatorId(raw.correspondent),
+		documentType: locatorId(raw.documentType),
+		storagePath: locatorId(raw.storagePath),
 		tags: chosenIds(raw.tags),
 		createdAfter: optionalText(raw.createdAfter),
 		createdBefore: optionalText(raw.createdBefore),
@@ -66,13 +67,13 @@ function toDocumentPatch(fields: IDataObject): DocumentPatch {
 		patch.content = fields.content;
 	}
 	if (isChosen(fields.correspondent)) {
-		patch.correspondent = optionalId(fields.correspondent) ?? null;
+		patch.correspondent = locatorId(fields.correspondent) ?? null;
 	}
 	if (isChosen(fields.documentType)) {
-		patch.documentType = optionalId(fields.documentType) ?? null;
+		patch.documentType = locatorId(fields.documentType) ?? null;
 	}
 	if (isChosen(fields.storagePath)) {
-		patch.storagePath = optionalId(fields.storagePath) ?? null;
+		patch.storagePath = locatorId(fields.storagePath) ?? null;
 	}
 	const tags = chosenIds(fields.tags);
 	if (tags !== undefined) {
@@ -95,7 +96,12 @@ async function get(
 	itemIndex: number,
 	client: PaperlessClient,
 ): Promise<INodeExecutionData[]> {
-	const documentId = ctx.getNodeParameter('documentId', itemIndex) as number;
+	const documentId = requiredLocatorId(
+		ctx.getNode(),
+		ctx.getNodeParameter('documentId', itemIndex),
+		'Document',
+		itemIndex,
+	);
 	const options = ctx.getNodeParameter('options', itemIndex, {}) as IDataObject;
 	const document = await client.request<IDataObject>({
 		method: 'GET',
@@ -145,7 +151,12 @@ async function download(
 	itemIndex: number,
 	client: PaperlessClient,
 ): Promise<INodeExecutionData[]> {
-	const documentId = ctx.getNodeParameter('documentId', itemIndex) as number;
+	const documentId = requiredLocatorId(
+		ctx.getNode(),
+		ctx.getNodeParameter('documentId', itemIndex),
+		'Document',
+		itemIndex,
+	);
 	const file = ctx.getNodeParameter('file', itemIndex, 'archived') as DocumentFile;
 	const binaryPropertyName = ctx.getNodeParameter(
 		'binaryPropertyName',
@@ -177,7 +188,12 @@ async function update(
 	itemIndex: number,
 	client: PaperlessClient,
 ): Promise<INodeExecutionData[]> {
-	const documentId = ctx.getNodeParameter('documentId', itemIndex) as number;
+	const documentId = requiredLocatorId(
+		ctx.getNode(),
+		ctx.getNodeParameter('documentId', itemIndex),
+		'Document',
+		itemIndex,
+	);
 	const fields = ctx.getNodeParameter('updateFields', itemIndex, {}) as IDataObject;
 	const permissions = toPermissionsPatch(fields);
 
@@ -197,7 +213,12 @@ async function remove(
 	itemIndex: number,
 	client: PaperlessClient,
 ): Promise<INodeExecutionData[]> {
-	const documentId = ctx.getNodeParameter('documentId', itemIndex) as number;
+	const documentId = requiredLocatorId(
+		ctx.getNode(),
+		ctx.getNodeParameter('documentId', itemIndex),
+		'Document',
+		itemIndex,
+	);
 	// A 204 leaves an empty body, so there is nothing to pass through; the node
 	// still has to emit an item or the branch produces no output at all.
 	await client.request<unknown>({ method: 'DELETE', path: `/api/documents/${documentId}/` });
