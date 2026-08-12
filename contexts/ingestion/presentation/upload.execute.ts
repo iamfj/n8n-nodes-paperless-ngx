@@ -1,6 +1,7 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { sleep } from 'n8n-workflow';
 import { chosenIds } from '../../../shared/domain/load-options';
+import { toBoolean } from '../../../shared/domain/parameters';
 import { readBinaryInput, toFormData } from '../../../shared/infrastructure/binary';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
 import {
@@ -81,7 +82,10 @@ export async function executeUpload(
 		itemIndex,
 		'data',
 	) as string;
-	const waitForConsumption = ctx.getNodeParameter('waitForConsumption', itemIndex, true) as boolean;
+	const waitForConsumption = toBoolean(
+		ctx.getNodeParameter('waitForConsumption', itemIndex, true),
+		true,
+	);
 	const fields = ctx.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
 	const file = await readBinaryInput(ctx, itemIndex, binaryPropertyName);
 

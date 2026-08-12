@@ -1,5 +1,6 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { collect, paginate } from '../../../shared/domain/paginate';
+import { optionalBoolean, toBoolean } from '../../../shared/domain/parameters';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
 import { type TaxonomyDescriptor, taxonomyBody } from '../domain/taxonomy';
 
@@ -21,14 +22,6 @@ export function isTaxonomyOperation(operation: string): operation is TaxonomyOpe
 function optionalMatchingAlgorithm(raw: unknown): number | undefined {
 	const value = typeof raw === 'string' ? Number.parseInt(raw, 10) : raw;
 	return typeof value === 'number' && Number.isInteger(value) ? value : undefined;
-}
-
-/** Same problem on a toggle, which an expression delivers as `'true'`. */
-function optionalBoolean(raw: unknown): boolean | undefined {
-	if (typeof raw === 'boolean') {
-		return raw;
-	}
-	return raw === 'true' ? true : raw === 'false' ? false : undefined;
 }
 
 function bodyFrom(descriptor: TaxonomyDescriptor, fields: IDataObject): Record<string, unknown> {
@@ -78,7 +71,7 @@ export async function executeTaxonomy(
 	}
 
 	if (operation === 'getMany') {
-		const returnAll = ctx.getNodeParameter('returnAll', itemIndex, false) as boolean;
+		const returnAll = toBoolean(ctx.getNodeParameter('returnAll', itemIndex, false), false);
 		const limit = returnAll ? undefined : (ctx.getNodeParameter('limit', itemIndex, 50) as number);
 		const filters = ctx.getNodeParameter('filters', itemIndex, {}) as IDataObject;
 		const nameContains =
