@@ -74,6 +74,6 @@ describe('note execute', () => {
 
 		const result = await run(fake, 'getMany');
 
-		expect(result[0].json).toMatchObject({ documentId: 42 });
+		expect(result[0].json).toMatchObject({ document: 42 });
 	});
 });

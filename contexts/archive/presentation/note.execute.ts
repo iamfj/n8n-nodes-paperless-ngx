@@ -61,7 +61,7 @@ export async function executeNote(
 		];
 	}
 	if (!Array.isArray(notes)) {
-		return [{ json: { documentId, notes }, pairedItem: { item: itemIndex } }];
+		return [{ json: { document: documentId, notes }, pairedItem: { item: itemIndex } }];
 	}
 	return notes.map((json) => ({
 		json: { ...json, document: documentId },
