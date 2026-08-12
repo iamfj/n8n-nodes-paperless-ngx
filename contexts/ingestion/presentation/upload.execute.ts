@@ -1,5 +1,5 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { sleep } from 'n8n-workflow';
+import { NodeOperationError, sleep } from 'n8n-workflow';
 import { chosenIds } from '../../../shared/domain/load-options';
 import { toBoolean } from '../../../shared/domain/parameters';
 import { readBinaryInput, toFormData } from '../../../shared/infrastructure/binary';
@@ -112,8 +112,14 @@ export async function executeUpload(
 	if (taskId === undefined) {
 		// 200 with no UUID means the request reached something that is not
 		// Paperless-ngx, or a version whose contract we do not know.
-		throw new Error(
-			'Paperless-ngx accepted the upload but returned no Consumption task ID, so the document cannot be tracked',
+		throw new NodeOperationError(
+			ctx.getNode(),
+			'The upload was accepted but no Consumption task ID came back, so the document cannot be tracked',
+			{
+				itemIndex,
+				description:
+					"The response did not have the shape Paperless-ngx returns. Check that the credential's base URL is the instance root rather than a proxy or the web UI, and that the instance serves API version 9 or 10.",
+			},
 		);
 	}
 
@@ -125,13 +131,24 @@ export async function executeUpload(
 	const task = await pollTask(client, taskId, Math.max(0, timeout) * 1000);
 
 	if (task.status === 'failure' || task.status === 'revoked') {
-		throw new Error(
+		throw new NodeOperationError(
+			ctx.getNode(),
 			`Paperless-ngx could not consume the file (${task.status}): ${task.message ?? 'no reason reported'}`,
+			{
+				itemIndex,
+				description: `Open Paperless-ngx and look up task ${taskId} under File Tasks for the full log. An unsupported file type and a duplicate of an existing document both end here.`,
+			},
 		);
 	}
 	if (!isTerminal(task.status)) {
-		throw new Error(
-			`Consumption of task ${taskId} did not finish within ${timeout} seconds. It may still complete — check the task in Paperless-ngx.`,
+		throw new NodeOperationError(
+			ctx.getNode(),
+			`Consumption of task ${taskId} did not finish within ${timeout} seconds`,
+			{
+				itemIndex,
+				description:
+					'Consumption may still complete on the server. Raise Timeout (Seconds), or turn off Wait for Consumption and look the task up in a later step.',
+			},
 		);
 	}
 	if (task.documentId === undefined) {
