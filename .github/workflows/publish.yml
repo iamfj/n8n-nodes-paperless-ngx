@@ -17,7 +17,17 @@
 #
 # ─── ONE-TIME SETUP ────────────────────────────────────────────────────────────
 #
-# Option A — OIDC Trusted Publishing (recommended, no long-lived secrets):
+# A Trusted Publisher is configured from a package's own settings page, so it
+# cannot exist before the package does. The FIRST publish therefore goes through
+# Option B, and Option A replaces it once the package is on the registry.
+#
+# Option B — npm Granular Access Token (the first release):
+#   1. On npmjs.com: Access Tokens → Generate New Token → Granular Access Token.
+#      Scope it to this package with "Read and write" publish permission.
+#   2. In GitHub: Settings → Secrets and variables → Actions → New secret.
+#      Name it NPM_TOKEN and paste the token value.
+#
+# Option A — OIDC Trusted Publishing (every release after the first):
 #   1. Log in to npmjs.com and open your package's settings.
 #   2. Under "Publish access" → "Trusted Publishers", click "Add a publisher".
 #   3. Select GitHub Actions and fill in:
@@ -25,17 +35,12 @@
 #        Repository name:  <your-repo-name>
 #        Workflow name:    publish.yml
 #        Environment:      (leave blank unless you use GitHub Environments)
-#   4. Leave the NPM_TOKEN secret unset in this repository. GitHub's OIDC
-#      token is used instead — no secret ever touches your repo settings.
+#   4. Delete the NPM_TOKEN secret. GitHub's OIDC token is used instead — no
+#      secret ever touches your repo settings.
 #
-# Option B — npm Automation Token (fallback):
-#   1. On npmjs.com: Access Tokens → Generate New Token → Granular Access Token.
-#      Scope it to this package with "Read and write" publish permission.
-#   2. In GitHub: Settings → Secrets and variables → Actions → New secret.
-#      Name it NPM_TOKEN and paste the token value.
-#
-# Both options work with --provenance. Provenance is signed by GitHub's OIDC
-# infrastructure regardless of how npm authentication is handled.
+# Both options work with --provenance, which is minted from the GitHub OIDC
+# token either way, so the token-published first version is not second-class.
+# See docs/cloud-verification.md for the full release runbook.
 #
 # ─── TAG CONVENTION ────────────────────────────────────────────────────────────
 #
@@ -81,7 +86,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 'lts/*'
+          # Pinned to a major rather than 'lts/*' because the npm version is what
+          # matters here: OIDC trusted publishing needs npm >= 11.5.1 and Node
+          # >= 22.14.0 (https://docs.npmjs.com/trusted-publishers), and 'lts/*'
+          # silently moves between majors that bundle different npm versions.
+          # Node 24 bundles npm 11.
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -94,10 +104,13 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Verify package contents
-        # The release step below runs lint, build and `npm publish` — it never
-        # inspects the tarball. This is the last point at which a missing icon,
-        # a missing codex file or a reintroduced dependency can still be caught
-        # before the version is public and immutable.
+        # Fail-fast only. The release step below reruns lint and build before it
+        # publishes (@n8n/node-cli, dist/commands/release.js:37-46) and
+        # `n8n-node build` wipes dist first (build.js:23), so what this step
+        # inspects is not the tarball that ships -- package.json's
+        # `prepublishOnly` re-runs the same check after that final build, on the
+        # pack npm is about to perform. Keeping this step costs one build and
+        # catches a packaging error before the release step spends time linting.
         run: |
           npm run build
           npm run verify:package
