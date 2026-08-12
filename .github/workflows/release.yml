@@ -1,0 +1,200 @@
+# Cuts and publishes a release. See docs/release.md for the process and for why
+# the Release PR is merged with an admin bypass.
+
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      # The bootstrap path only. release-please pushes its tags with
+      # GITHUB_TOKEN, and GitHub does not start a workflow run for those, so
+      # after 0.1.0 this filter only ever matches a tag pushed by hand.
+      - '*.*.*'
+
+# Never two publishes at once. cancel-in-progress is off on purpose: killing a
+# run between `npm publish` and the provenance scan leaves a released version
+# unverified.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  release-please:
+    name: Release PR
+    # Skipped on the bootstrap tag push, where there is nothing to propose.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # Digest-pinned like every other action here; Renovate keeps the pins
+      # current from the trailing version comment.
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+
+  publish:
+    name: Publish to npm
+    needs: release-please
+    # Two entry points: a Release PR that just merged, or a hand-pushed tag.
+    # !cancelled() is needed because `needs` on a skipped job otherwise skips
+    # this one too.
+    if: >-
+      ${{ !cancelled()
+        && needs.release-please.result != 'failure'
+        && (needs.release-please.outputs.release_created == 'true'
+            || startsWith(github.ref, 'refs/tags/')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      # Mints the OIDC token the provenance attestation is signed with.
+      id-token: write
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # This job handles a publish credential; nothing here pushes back to git.
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # Pinned to a major, not 'lts/*': the npm version is what matters.
+          # OIDC trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0
+          # (https://docs.npmjs.com/trusted-publishers). Node 24 bundles npm 11.
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # --ignore-scripts because this is the one job that can sign a release.
+        # A malicious postinstall in any transitive dev dependency would run
+        # before the build, with the ability to alter dist/ -- and the provenance
+        # attestation minted below would then vouch for the tampered output.
+        run: npm ci --ignore-scripts
+
+      # The Release PR is merged with an admin bypass, because a PR opened by
+      # GITHUB_TOKEN never starts a CI run and its required checks stay pending
+      # forever. That makes these the only gates a release commit ever sees.
+      - name: Run lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Typecheck tests
+        run: npm run typecheck:test
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify package contents
+        run: npm run verify:package
+
+      - name: Resolve version
+        id: version
+        env:
+          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: echo "version=${TAG_NAME:-$REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Assert package.json matches the release
+        # A hand-pushed tag can point at a commit whose package.json says
+        # something else. npm would then publish that other version, or refuse
+        # it as a duplicate.
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "::error::package.json is $PKG_VERSION but this release is $VERSION"
+            exit 1
+          fi
+
+      - name: Publish
+        # Explicit rather than `n8n-node release`, which branches on
+        # GITHUB_ACTIONS and runs exactly this (@n8n/node-cli,
+        # dist/commands/release.js:37-46). Spelling it out keeps a CLI minor bump
+        # from silently rerouting a release into release-it. RELEASE_MODE
+        # satisfies the `n8n-node prerelease` guard in prepublishOnly; --access
+        # and --provenance come from package.json#publishConfig.
+        #
+        # Option A (OIDC): leave NPM_TOKEN unset -- the token step is skipped and
+        #   npm uses the OIDC exchange instead.
+        # Option B (token): set NPM_TOKEN in repo secrets -- it is written to an
+        #   .npmrc here before publishing.
+        # Written as an if-block rather than `[ -n "$NPM_TOKEN" ] && ...` because
+        # steps run under `bash -e`, where a failing test as the last command of
+        # an AND-list aborts the step -- which would break Option A, the very
+        # path meant to leave NPM_TOKEN unset.
+        #
+        # NPM_CONFIG_USERCONFIG redirects that write away from `~/.npmrc`, which
+        # every later npm and npx invocation would otherwise read. The variable
+        # does not outlive the step, but the file would, so the trap deletes it
+        # however this step exits.
+        run: |
+          export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/publish.npmrc"
+          trap 'rm -f "$NPM_CONFIG_USERCONFIG"' EXIT
+          if [ -n "$NPM_TOKEN" ]; then
+            npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          fi
+          RELEASE_MODE=true npm publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  scan:
+    name: Scan published package
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Its own job so n8n's scanner runs with no token, no secret and no checkout.
+    permissions: {}
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Verify published package with n8n's scanner
+        # n8n's own static analysis -- the check that decides whether the package
+        # is eligible for verification. Its first assertion is that the release
+        # carries a provenance attestation, so it proves the publish above did
+        # not silently degrade to an unsigned one. It resolves a package by name
+        # from the registry and has no local-directory mode, which is why it
+        # cannot run on a pull request.
+        #
+        # Pinned: `npx --yes` on a floating name runs whatever was published
+        # minutes ago. The pin buys the same three-day cooldown Renovate applies
+        # elsewhere, and ignore-scripts covers the scanner's own dependencies,
+        # which still resolve from floating ranges at this moment.
+        #
+        # The retry is not superstition: the registry needs a moment to serve a
+        # just-published version, and a 404 would fail a release that succeeded.
+        env:
+          # renovate: datasource=npm depName=@n8n/scan-community-package
+          SCANNER_VERSION: 0.32.0
+          NPM_CONFIG_IGNORE_SCRIPTS: 'true'
+          VERSION: ${{ needs.publish.outputs.version }}
+        run: |
+          PKG="@iamfj/n8n-nodes-paperless-ngx@${VERSION}"
+          for attempt in 1 2 3 4 5; do
+            if npx --yes "@n8n/scan-community-package@${SCANNER_VERSION}" "$PKG"; then
+              exit 0
+            fi
+            echo "Scan attempt $attempt failed; the registry may not serve $PKG yet."
+            sleep 15
+          done
+          echo "::error::$PKG failed @n8n/scan-community-package after 5 attempts."
+          exit 1
