@@ -95,16 +95,6 @@ export const documentFields: INodeProperties[] = [
 	documentId,
 
 	{
-		displayName: 'Options',
-		name: 'options',
-		type: 'collection',
-		placeholder: 'Add option',
-		default: {},
-		displayOptions: showFor(['get']),
-		options: [includePermissions],
-	},
-
-	{
 		displayName: 'Return All',
 		name: 'returnAll',
 		type: 'boolean',
@@ -184,7 +174,6 @@ export const documentFields: INodeProperties[] = [
 				description:
 					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
-			includePermissions,
 			{
 				displayName: 'Sort By',
 				name: 'ordering',
@@ -243,6 +232,18 @@ export const documentFields: INodeProperties[] = [
 					'Advanced full-text query in Paperless-ngx query syntax. A different search engine from Text — the two can be combined but rarely should be.',
 			},
 		],
+	},
+
+	{
+		displayName: 'Options',
+		name: 'options',
+		type: 'collection',
+		placeholder: 'Add option',
+		default: {},
+		// Shared by Get and Get Many: the flag changes the shape of a document
+		// rather than which documents come back, so it is not a filter.
+		displayOptions: showFor(['get', 'getMany']),
+		options: [includePermissions],
 	},
 
 	{

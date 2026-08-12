@@ -112,9 +112,10 @@ async function getMany(
 	const returnAll = ctx.getNodeParameter('returnAll', itemIndex, false) as boolean;
 	const limit = returnAll ? undefined : (ctx.getNodeParameter('limit', itemIndex, 50) as number);
 	const filters = ctx.getNodeParameter('filters', itemIndex, {}) as IDataObject;
+	const options = ctx.getNodeParameter('options', itemIndex, {}) as IDataObject;
 
 	const documentFilters = toDocumentFilters(filters);
-	const permsQuery = fullPermsQuery(filters.includePermissions === true);
+	const permsQuery = fullPermsQuery(options.includePermissions === true);
 
 	const documents = await collect(
 		paginate<IDataObject>((page) =>
