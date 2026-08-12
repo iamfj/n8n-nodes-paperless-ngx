@@ -1,0 +1,19 @@
+{
+	"node": "@iamfj/n8n-nodes-paperless-ngx.paperlessNgxTrigger",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Productivity", "Utility"],
+	"alias": ["Paperless", "Paperless-ngx", "Document", "DMS", "Webhook", "Consumption", "Trigger"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://github.com/iamfj/n8n-nodes-paperless-ngx?tab=readme-ov-file#credentials"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/iamfj/n8n-nodes-paperless-ngx?tab=readme-ov-file#triggers"
+			}
+		]
+	}
+}

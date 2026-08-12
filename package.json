@@ -56,7 +56,8 @@
       "dist/credentials/PaperlessNgxApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/PaperlessNgx/PaperlessNgx.node.js"
+      "dist/nodes/PaperlessNgx/PaperlessNgx.node.js",
+      "dist/nodes/PaperlessNgx/PaperlessNgxTrigger.node.js"
     ]
   },
   "devDependencies": {
