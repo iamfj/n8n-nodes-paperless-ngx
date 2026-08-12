@@ -90,7 +90,7 @@ The node's error messages carry these hints already; the table is here so the tw
 |---|---|---|
 | 401, "Invalid token" | Token copied from the wrong place, or an OAuth-style `Bearer` scheme expected | Re-copy from **My Profile → API Token** in Paperless-ngx |
 | 403 on one object, 200 on others | Object-level permission in Paperless-ngx | Grant the token's user access to that object — the credential is fine |
-| 404 on every request | Base URL carries an `/api` suffix, so the path doubles up | Use the instance root |
+| 404 on every request | Base URL points somewhere other than the instance root — a trailing `/api` is the one suffix the node drops for you, a subpath is not | Use the instance root |
 | 406 | The pinned API version is not served by this instance | Set **API Version** to `Auto` in the credential |
 | 413 on upload | The reverse proxy body limit, not a Paperless setting | Raise nginx `client_max_body_size` |
 | "replied with an HTML page instead of JSON" | Base URL points at the web UI or at a proxy error page | Check the URL and the proxy in front of it |
