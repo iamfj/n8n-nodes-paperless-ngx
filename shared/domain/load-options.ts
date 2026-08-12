@@ -19,8 +19,10 @@ export function locatorId(raw: unknown): number | undefined {
 /**
  * Value carried by the "more than N entries" notice a truncated dropdown appends.
  * n8n has no inert option — the notice is selectable — so it needs a value that
- * no execute path can mistake for a real one. `''` cannot be used: on Document →
- * Update that is exactly how a deliberate "clear the Correspondent" arrives.
+ * no execute path can mistake for a real one — neither a Paperless ID, which is
+ * what every real entry carries, nor `''`, which is what an expression that
+ * resolved to nothing yields. The Tags picker is the only dropdown left that
+ * appends it, along with the trigger's two single-value filters.
  */
 export const TRUNCATED_OPTION_VALUE = '__truncated__';
 
