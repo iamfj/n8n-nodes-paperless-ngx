@@ -76,7 +76,7 @@ disabled via
 `gh api -X DELETE repos/iamfj/n8n-nodes-paperless-ngx/automated-security-fixes`. Re-enabling either
 does not add coverage, it just races Renovate for the same bump.
 
-Config lives in `.github/renovate.json5`. Three settings there are load-bearing and should not be
+Config lives in `.github/renovate.json5`. Three settings are load-bearing and should not be
 relaxed without a reason written down next to them:
 
 - **`minimumReleaseAge: '3 days'`.** A stolen maintainer token and a malicious `postinstall` is the
