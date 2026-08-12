@@ -13,6 +13,24 @@ export function isTaxonomyOperation(operation: string): operation is TaxonomyOpe
 	return (OPERATIONS as readonly string[]).includes(operation);
 }
 
+/**
+ * A dropdown filled by an expression or by an AI agent arrives as `'6'`, not
+ * `6`. Reading only the number would drop the choice and create the resource
+ * with the server's default matching algorithm without reporting it.
+ */
+function optionalMatchingAlgorithm(raw: unknown): number | undefined {
+	const value = typeof raw === 'string' ? Number.parseInt(raw, 10) : raw;
+	return typeof value === 'number' && Number.isInteger(value) ? value : undefined;
+}
+
+/** Same problem on a toggle, which an expression delivers as `'true'`. */
+function optionalBoolean(raw: unknown): boolean | undefined {
+	if (typeof raw === 'boolean') {
+		return raw;
+	}
+	return raw === 'true' ? true : raw === 'false' ? false : undefined;
+}
+
 function bodyFrom(descriptor: TaxonomyDescriptor, fields: IDataObject): Record<string, unknown> {
 	const extras: Record<string, unknown> = {};
 	for (const field of descriptor.extraFields) {
@@ -24,9 +42,8 @@ function bodyFrom(descriptor: TaxonomyDescriptor, fields: IDataObject): Record<s
 	return taxonomyBody({
 		name: typeof fields.name === 'string' && fields.name.length > 0 ? fields.name : undefined,
 		match: typeof fields.match === 'string' ? fields.match : undefined,
-		matchingAlgorithm:
-			typeof fields.matchingAlgorithm === 'number' ? fields.matchingAlgorithm : undefined,
-		isInsensitive: typeof fields.isInsensitive === 'boolean' ? fields.isInsensitive : undefined,
+		matchingAlgorithm: optionalMatchingAlgorithm(fields.matchingAlgorithm),
+		isInsensitive: optionalBoolean(fields.isInsensitive),
 		extras,
 	});
 }

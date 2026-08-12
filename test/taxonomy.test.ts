@@ -110,6 +110,24 @@ describe('taxonomy execute', () => {
 		});
 	});
 
+	it('keeps a dropdown and a toggle an expression delivered as strings', async () => {
+		const fake = createFakeExecuteFunctions({
+			parameters: {
+				name: 'Acme GmbH',
+				additionalFields: { matchingAlgorithm: '6', isInsensitive: 'true' },
+			},
+		});
+		fake.http.mockResolvedValue(ok({ id: 3 }));
+
+		await run(fake, TAXONOMY.correspondent, 'create');
+
+		expect(optionsOf(fake.http).body).toEqual({
+			name: 'Acme GmbH',
+			matching_algorithm: 6,
+			is_insensitive: true,
+		});
+	});
+
 	it('filters a list by name and stops at the limit', async () => {
 		const fake = createFakeExecuteFunctions({
 			parameters: { returnAll: false, limit: 2, filters: { nameContains: 'acme' } },
