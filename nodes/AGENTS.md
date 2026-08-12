@@ -53,7 +53,7 @@ developer — the agent only sees that string when deciding whether to call it. 
 must not set it at all: `node-usable-as-tool` in `@n8n/eslint-plugin-community-nodes` 0.29.0 turned
 that from required into an error, because a trigger has no `execute` for an agent to call.
 
-That rule ships with `@n8n/node-cli`, and `@n8n/scan-community-package` — the vetting gate n8n runs
-on submission — pins its own, newer copy. A local `n8n-node lint` therefore only proves the package
-passes the plugin version this repo happens to have installed; keep `@n8n/node-cli` current or the
-gate fails on rules that never ran here.
+That rule ships with `@n8n/node-cli`, so a local `n8n-node lint` only proves the package passes the
+plugin version this repo happens to have installed — keeping the CLI current is what keeps that
+proof worth anything. `@n8n/scan-community-package`, the vetting gate n8n runs on submission, is a
+separate check that cannot run against a working tree at all; see `docs/code-quality.md`.
