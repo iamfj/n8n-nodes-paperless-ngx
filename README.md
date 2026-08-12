@@ -21,6 +21,8 @@
   Consumption to complete and hands you the real document.
 - **AI-agent ready.** Every operation is exposed as a tool, so an agent can answer questions against
   your archive.
+- **Push triggers, not polling.** The trigger node provisions a Paperless-ngx workflow that calls
+  n8n when a document is consumed, added or updated.
 
 ## Operations
 
@@ -35,6 +37,33 @@
 
 Correspondent, Document Type, Storage Path and Tag fields are dropdowns loaded from your instance;
 each also accepts an ID from an expression.
+
+## Triggers
+
+The **Paperless-Ngx Trigger** node is a push trigger, not a poll. Activating it creates a
+Paperless-ngx **Workflow** with a **Webhook** action pointing at the node's own URL; deactivating it
+deletes that workflow again. Paperless does the matching, so n8n runs only when something you asked
+for actually happened.
+
+| Event | Fires when | Carries a document ID |
+|---|---|---|
+| Document Added | a document finished Consumption | yes |
+| Document Updated | an existing document was edited | yes |
+| Consumption Started | a file entered Consumption | no — the document row does not exist yet |
+
+*Filters* (Tags, Correspondent, Document Type, file name pattern) are stored on the Paperless
+trigger and evaluated there. *Fetch Full Document* loads the complete record over the API, because
+the webhook payload itself carries only the handful of fields Paperless renders into it. *Verify
+Signature Header* rejects calls that do not present the random value this node handed Paperless when
+it created the workflow.
+
+Requirements:
+
+- **Paperless-ngx 2.14 or newer** — the Webhook action shipped in that release.
+- **A token whose user may create workflows** (`/api/workflows/`). A token that can read documents
+  but not write workflows fails at activation with a 403 rather than silently never firing.
+- **An n8n instance Paperless can reach.** The webhook URL is the one n8n shows on the node; if that
+  is a `localhost` address, Paperless in another container will not resolve it.
 
 ## Installation
 
@@ -98,6 +127,10 @@ The node's error messages carry these hints already; the table is here so the tw
 | "replied with an HTML page instead of JSON" | Base URL points at the web UI or at a proxy error page | Check the URL and the proxy in front of it |
 | Node missing from an AI Agent's tool list | `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE` is unset | Set it to `true` and restart n8n |
 | Upload times out | OCR on a long scan genuinely takes minutes | Raise **Timeout (Seconds)** on the Upload operation |
+| 403 when activating the trigger | The token's user may not create Paperless workflows | Use a token whose user has workflow permissions |
+| Trigger activates but never fires | Paperless refuses the webhook URL: `PAPERLESS_WEBHOOKS_ALLOWED_SCHEMES` (default `http,https`), `PAPERLESS_WEBHOOKS_ALLOWED_PORTS` (default: all) or `PAPERLESS_WEBHOOKS_ALLOW_INTERNAL_REQUESTS` (default `true`) | Allow the scheme, port and — for a webhook URL on a private address — internal requests |
+| Trigger fires, but the payload's `url` is empty | `PAPERLESS_URL` is unset, so Paperless has no absolute URL to render | Set `PAPERLESS_URL` on the Paperless instance |
+| 400 "workflow with this name already exists" | A previous Paperless workflow from this node was deleted from n8n's side only | Delete the leftover `n8n …` workflow in **Paperless → Workflows** |
 
 ## Credentials
 
@@ -165,6 +198,62 @@ finished document rather than a task ID, so the next node can act on the real do
 `attachment_0` is the first attachment; the IMAP node numbers them from zero. Raise **Timeout
 (Seconds)** if OCR on your scans takes longer than five minutes.
 
+### Act on every document Paperless-ngx files
+
+This one runs the other way round: Paperless calls n8n. Activate the workflow and the trigger
+provisions the Paperless-ngx side by itself.
+
+```json
+{
+  "name": "New invoice → notify",
+  "nodes": [
+    {
+      "parameters": {
+        "event": "documentAdded",
+        "filters": {
+          "tags": [3]
+        },
+        "fetchFullDocument": true
+      },
+      "type": "@iamfj/n8n-nodes-paperless-ngx.paperlessNgxTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "8f7a1c2e-0000-4000-8000-000000000003",
+      "name": "Paperless-ngx Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8f7a1c2e-0000-4000-8000-000000000005",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.title }} was filed as document {{ $json.docId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0],
+      "id": "8f7a1c2e-0000-4000-8000-000000000004",
+      "name": "Build Message"
+    }
+  ],
+  "connections": {
+    "Paperless-ngx Trigger": {
+      "main": [[{ "node": "Build Message", "type": "main", "index": 0 }]]
+    }
+  }
+}
+```
+
+Tag ID `3` is a placeholder — pick your own from the node's Tags dropdown. With *Fetch Full
+Document* on, the complete document record arrives under `document`, next to the `docId`, `title`
+and `url` Paperless renders into the webhook itself.
+
 ### Let an AI agent search the archive
 
 Connect a **Paperless-ngx** node to an AI Agent's *Tool* input and set it to **Document → Get Many**
@@ -177,7 +266,8 @@ the tool list at all — see [Installation](#self-hosted-through-the-ui).
 ## Compatibility
 
 Paperless-ngx serving API v9 or v10, and Node.js 20 or 22. Both API versions are exercised by the
-test suite; the node negotiates between them per request.
+test suite; the node negotiates between them per request. The trigger node additionally needs
+Paperless-ngx 2.14 or newer, which is where the Webhook workflow action shipped.
 
 ## Resources
 
