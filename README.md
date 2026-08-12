@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="nodes/PaperlessNgx/paperless.svg" width="72" alt="">
+<!-- Absolute on purpose: only dist/ is published, so a repo-relative path renders
+     as a broken image on npmjs.com, which is the page reviewers open first. -->
+<img src="https://raw.githubusercontent.com/iamfj/n8n-nodes-paperless-ngx/main/nodes/PaperlessNgx/paperless.svg" width="72" alt="">
 
 # n8n-nodes-paperless-ngx
 
@@ -111,10 +113,77 @@ The node's error messages carry these hints already; the table is here so the tw
 
 Hit **Test** — it confirms the URL and the token against `/api/profile/`.
 
+## Usage
+
+### File every email attachment into Paperless-ngx
+
+Copy this into an n8n canvas (**Ctrl/Cmd+V** pastes workflow JSON directly). It watches a mailbox,
+sends each attachment to Consumption, and — because *Wait for Consumption* is on — returns the
+finished document rather than a task ID, so the next node can act on the real document.
+
+```json
+{
+  "name": "Email attachments → Paperless-ngx",
+  "nodes": [
+    {
+      "parameters": {
+        "format": "resolved",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "8f7a1c2e-0000-4000-8000-000000000001",
+      "name": "Email Trigger (IMAP)"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "operation": "upload",
+        "binaryPropertyName": "attachment_0",
+        "waitForConsumption": true,
+        "timeout": 300,
+        "additionalFields": {
+          "title": "={{ $json.subject }}"
+        }
+      },
+      "type": "@iamfj/n8n-nodes-paperless-ngx.paperlessNgx",
+      "typeVersion": 1,
+      "position": [220, 0],
+      "id": "8f7a1c2e-0000-4000-8000-000000000002",
+      "name": "Paperless-ngx"
+    }
+  ],
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [[{ "node": "Paperless-ngx", "type": "main", "index": 0 }]]
+    }
+  }
+}
+```
+
+`attachment_0` is the first attachment; the IMAP node numbers them from zero. Raise **Timeout
+(Seconds)** if OCR on your scans takes longer than five minutes.
+
+### Let an AI agent search the archive
+
+Connect a **Paperless-ngx** node to an AI Agent's *Tool* input and set it to **Document → Get Many**
+with the *Search* filter driven by the model. The agent then answers questions like "what did the
+electrician invoice in March?" by searching your archive instead of guessing.
+
+Self-hosted instances need `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true` for the node to appear in
+the tool list at all — see [Installation](#self-hosted-through-the-ui).
+
 ## Compatibility
 
 Paperless-ngx serving API v9 or v10, and Node.js 20 or 22. Both API versions are exercised by the
 test suite; the node negotiates between them per request.
+
+## Resources
+
+- [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
+- [Paperless-ngx REST API documentation](https://docs.paperless-ngx.com/api/)
+- [CHANGELOG.md](CHANGELOG.md)
 
 ## Contributing
 
