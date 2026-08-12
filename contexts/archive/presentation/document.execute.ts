@@ -1,5 +1,5 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { isChosen } from '../../../shared/domain/load-options';
+import { chosenIds, isChosen } from '../../../shared/domain/load-options';
 import { collect, paginate } from '../../../shared/domain/paginate';
 import {
 	fullPermsQuery,
@@ -46,7 +46,7 @@ function toDocumentFilters(raw: IDataObject): DocumentFilters {
 		correspondent: optionalId(raw.correspondent),
 		documentType: optionalId(raw.documentType),
 		storagePath: optionalId(raw.storagePath),
-		tags: Array.isArray(raw.tags) ? raw.tags.map(Number).filter(Number.isInteger) : undefined,
+		tags: chosenIds(raw.tags),
 		createdAfter: optionalText(raw.createdAfter),
 		createdBefore: optionalText(raw.createdBefore),
 		addedAfter: optionalText(raw.addedAfter),
@@ -73,8 +73,9 @@ function toDocumentPatch(fields: IDataObject): DocumentPatch {
 	if (isChosen(fields.storagePath)) {
 		patch.storagePath = optionalId(fields.storagePath) ?? null;
 	}
-	if (Array.isArray(fields.tags)) {
-		patch.tags = fields.tags.map(Number).filter(Number.isInteger);
+	const tags = chosenIds(fields.tags);
+	if (tags !== undefined) {
+		patch.tags = tags;
 	}
 	if (optionalText(fields.created) !== undefined) {
 		patch.created = fields.created as string;

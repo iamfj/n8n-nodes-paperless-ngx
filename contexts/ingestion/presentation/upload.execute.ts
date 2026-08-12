@@ -1,5 +1,6 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { sleep } from 'n8n-workflow';
+import { chosenIds } from '../../../shared/domain/load-options';
 import { readBinaryInput, toFormData } from '../../../shared/infrastructure/binary';
 import type { PaperlessClient } from '../../../shared/infrastructure/paperless-client';
 import {
@@ -82,11 +83,7 @@ export async function executeUpload(
 			document_type: optionalId(fields.documentType),
 			storage_path: optionalId(fields.storagePath),
 			archive_serial_number: optionalId(fields.archiveSerialNumber),
-			// The truncation notice a long tag dropdown appends is selectable, so a
-			// non-numeric entry can reach here and Paperless-ngx answers 400.
-			tags: Array.isArray(fields.tags)
-				? fields.tags.map(Number).filter(Number.isInteger)
-				: undefined,
+			tags: chosenIds(fields.tags),
 		},
 		{ document: file },
 	);
