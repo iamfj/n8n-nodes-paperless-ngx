@@ -183,7 +183,7 @@ test suite; the node negotiates between them per request.
 
 - [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
 - [Paperless-ngx REST API documentation](https://docs.paperless-ngx.com/api/)
-- [CHANGELOG.md](CHANGELOG.md)
+- [Changelog](https://github.com/iamfj/n8n-nodes-paperless-ngx/blob/main/CHANGELOG.md)
 
 ## Contributing
 
