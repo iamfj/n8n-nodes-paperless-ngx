@@ -327,6 +327,15 @@ describe('document execute', () => {
 		expect(optionsOf(notice.http).body).toEqual({});
 	});
 
+	it('leaves the tags alone when no selected entry is a usable ID', async () => {
+		const fake = createFakeExecuteFunctions({
+			parameters: { documentId: 42, updateFields: { tags: ['Invoices', ''] } },
+		});
+		fake.http.mockResolvedValue(ok({ id: 42 }));
+		await run(fake, 'update');
+		expect(optionsOf(fake.http).body).toEqual({});
+	});
+
 	it('drops a tag filter whose only entry is the truncation notice', async () => {
 		const fake = createFakeExecuteFunctions({
 			parameters: {

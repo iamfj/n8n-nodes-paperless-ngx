@@ -13,17 +13,23 @@ export function isChosen(raw: unknown): boolean {
 
 /**
  * The IDs a multi-select carries, or `undefined` when nothing was chosen. A
- * selection of nothing but the truncation notice is not an empty selection:
- * dropping the notice alone would leave `[]`, which clears a document's tags on
- * Update.
+ * selection that yields no usable ID — the truncation notice, a name an
+ * expression failed to resolve — is not an empty selection: returning `[]` would
+ * clear a document's tags on Update and widen a Get Many filter to the whole
+ * archive. Only a genuinely empty selection means `[]`.
  */
 export function chosenIds(raw: unknown): number[] | undefined {
 	if (!Array.isArray(raw)) {
 		return undefined;
 	}
-	const chosen = raw.filter((entry) => isChosen(entry));
-	if (chosen.length === 0 && raw.length > 0) {
+	const ids = raw
+		.filter((entry) => isChosen(entry))
+		.map((entry) => Number(entry))
+		// `> 0` and not just an integer: `Number('')` and `Number(null)` are `0`,
+		// which no Paperless object ever has.
+		.filter((id) => Number.isInteger(id) && id > 0);
+	if (ids.length === 0 && raw.length > 0) {
 		return undefined;
 	}
-	return chosen.map(Number).filter(Number.isInteger);
+	return ids;
 }
