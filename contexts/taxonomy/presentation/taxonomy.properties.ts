@@ -7,10 +7,11 @@ import {
 } from '../domain/taxonomy';
 
 export function taxonomyOperations(descriptor: TaxonomyDescriptor): INodePropertyOptions[] {
-	// n8n's UX guidelines put operation descriptions and actions in sentence case,
-	// so both interpolate the lowercased display name; only `name` stays title case.
-	const singular = descriptor.displayName.toLowerCase();
-	const plural = descriptor.pluralDisplayName.toLowerCase();
+	// Sentence case, except the noun: Correspondent, Document Type and Storage Path
+	// are Paperless's own entity names and stay title case, as they are in the
+	// archive context's descriptions.
+	const singular = descriptor.displayName;
+	const plural = descriptor.pluralDisplayName;
 	return [
 		{
 			name: 'Create',
@@ -90,7 +91,6 @@ const matchingFields: INodeProperties[] = [
 export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[] {
 	const resource = [descriptor.resource];
 	const singular = descriptor.displayName;
-	const lower = singular.toLowerCase();
 	const showFor = (operations: string[]) => ({ show: { resource, operation: operations } });
 	const extras = descriptor.extraFields.map(toProperty);
 
@@ -100,7 +100,7 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 				displayName: singular,
 				name: 'taxonomyId',
 				searchListMethod: descriptor.listSearchMethod,
-				description: `The ${lower} to act on`,
+				description: `The ${singular} to act on`,
 				required: true,
 			}),
 			displayOptions: showFor(['get', 'update', 'delete']),
@@ -112,7 +112,7 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 			required: true,
 			default: '',
 			displayOptions: showFor(['create']),
-			description: `Name of the new ${lower}`,
+			description: `Name of the new ${singular}`,
 		},
 		// A required extra field (StoragePath's `path`) has to stand outside the
 		// collection: n8n only validates `required` on a top-level property, and a
@@ -149,7 +149,7 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 					name: 'name',
 					type: 'string',
 					default: '',
-					description: `New name for the ${lower}`,
+					description: `New name for the ${singular}`,
 				},
 				...extras,
 				...matchingFields,
@@ -185,7 +185,7 @@ export function taxonomyFields(descriptor: TaxonomyDescriptor): INodeProperties[
 					name: 'nameContains',
 					type: 'string',
 					default: '',
-					description: `Only ${descriptor.pluralDisplayName.toLowerCase()} whose name contains this text`,
+					description: `Only ${descriptor.pluralDisplayName} whose name contains this text`,
 				},
 			],
 		},
