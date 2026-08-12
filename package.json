@@ -1,6 +1,6 @@
 {
   "name": "@iamfj/n8n-nodes-paperless-ngx",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "n8n community node to automate Paperless-ngx document management: consume documents, correspondents, tags, document types and storage paths from your Paperless-ngx instance.",
   "license": "MIT",
   "homepage": "https://github.com/iamfj/n8n-nodes-paperless-ngx",
