@@ -1,9 +1,11 @@
 import type {
 	IDataObject,
 	IExecuteFunctions,
+	IHookFunctions,
 	IHttpRequestMethods,
 	IHttpRequestOptions,
 	ILoadOptionsFunctions,
+	IWebhookFunctions,
 } from 'n8n-workflow';
 import {
 	type ApiVersion,
@@ -79,14 +81,16 @@ function compact(qs: Record<string, unknown>): IDataObject {
 }
 
 /**
- * `ILoadOptionsFunctions` is accepted alongside `IExecuteFunctions` because
- * dropdown pickers run in that context. Both expose `getCredentials` and
+ * The context union is every place a Paperless call is made from: execute,
+ * dropdown pickers (`ILoadOptionsFunctions`), the trigger's activation and
+ * deactivation hooks (`IHookFunctions`) and its incoming webhook
+ * (`IWebhookFunctions`). All four expose `getCredentials` and
  * `helpers.httpRequestWithAuthentication`, which is the whole of what the client
  * touches; the binary helpers, which exist only on the execute context, live in
  * `binary.ts` and are called only from execute paths.
  */
 export async function createClient(
-	ctx: IExecuteFunctions | ILoadOptionsFunctions,
+	ctx: IExecuteFunctions | ILoadOptionsFunctions | IHookFunctions | IWebhookFunctions,
 ): Promise<PaperlessClient> {
 	const credentials = await ctx.getCredentials(CREDENTIAL_NAME);
 	const baseUrl = normalizeBaseUrl(String(credentials.baseUrl ?? ''));

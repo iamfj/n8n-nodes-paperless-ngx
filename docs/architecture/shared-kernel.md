@@ -18,6 +18,12 @@ imported `n8n-workflow`, making the distinction unenforceable and meaningless â€
 
 Enforced by `no-restricted-imports`, not by review discipline.
 
+`createClient` takes any of `IExecuteFunctions`, `ILoadOptionsFunctions`, `IHookFunctions` and
+`IWebhookFunctions` â€” execute, the dropdown pickers, and the trigger node's activation hooks and
+incoming webhook. The union is exactly the contexts a Paperless call is made from, and all four
+expose the two members the client uses: `getCredentials` and
+`helpers.httpRequestWithAuthentication`.
+
 ## API versions
 
 Paperless serves API v9 and v10. The version is selected per request with
