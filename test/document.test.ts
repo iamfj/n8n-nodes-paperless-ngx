@@ -163,6 +163,22 @@ describe('document execute', () => {
 		expect(optionsOf(fake.http).qs).toMatchObject({ full_perms: 'true' });
 	});
 
+	it('reads the permission flag from Options on Get Many too', async () => {
+		const fake = createFakeExecuteFunctions({
+			parameters: {
+				returnAll: false,
+				limit: 1,
+				filters: {},
+				options: { includePermissions: true },
+			},
+		});
+		fake.http.mockResolvedValue(ok(documentsPageV10));
+
+		await run(fake, 'getMany');
+
+		expect(optionsOf(fake.http).qs).toMatchObject({ full_perms: 'true' });
+	});
+
 	it('stops at the limit instead of walking every page', async () => {
 		const fake = createFakeExecuteFunctions({
 			parameters: { returnAll: false, limit: 1, filters: {} },
