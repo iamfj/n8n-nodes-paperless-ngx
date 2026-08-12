@@ -304,7 +304,7 @@ export const documentFields: INodeProperties[] = [
 				typeOptions: { loadOptionsMethod: 'getCorrespondents' },
 				default: '',
 				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+					'Correspondent to assign; leaving it unselected removes the current one. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 			},
 			{
 				displayName: 'Created',
@@ -320,7 +320,7 @@ export const documentFields: INodeProperties[] = [
 				typeOptions: { loadOptionsMethod: 'getDocumentTypes' },
 				default: '',
 				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+					'Document Type to assign; leaving it unselected removes the current one. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 			},
 			{
 				displayName: 'Owner ID',
@@ -338,7 +338,7 @@ export const documentFields: INodeProperties[] = [
 				typeOptions: { loadOptionsMethod: 'getStoragePaths' },
 				default: '',
 				description:
-					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+					'Storage Path to assign; leaving it unselected removes the current one. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 			},
 			{
 				displayName: 'Tag Names or IDs',
