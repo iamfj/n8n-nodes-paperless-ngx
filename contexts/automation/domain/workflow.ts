@@ -24,17 +24,19 @@ const WEBHOOK_ACTION_TYPE = 4;
 /**
  * Carries the value the node generated when it provisioned the Paperless
  * workflow, so a request that did not come from that workflow is rejected. Not
- * an HMAC: Paperless renders header values as literal template text and has no
- * signing step, so a shared random value is the whole of what it can offer.
+ * an HMAC: `WorkflowActionWebhook` in `src/documents/models.py` holds only a URL,
+ * params, headers and a body, with no signing secret, so a shared random value in
+ * a header is the whole of what Paperless can offer.
  */
 export const SIGNATURE_HEADER = 'x-n8n-signature';
 
 /**
- * The Jinja2 placeholders Paperless expands into the webhook body. Paperless
- * renders every one of them as text, so `docId` reaches n8n as a string and is
- * parsed back in `normalizeTriggerEvent`. `{{doc_id}}` and `{{doc_url}}` are only
- * populated for the Added and Updated triggers — at Consumption Started no
- * document row exists yet, and both render empty.
+ * The placeholders Paperless expands into the webhook body, listed under
+ * "Workflows" in https://docs.paperless-ngx.com/usage/#workflows. They are
+ * substituted into strings, so `docId` reaches n8n as text and is parsed back in
+ * `normalizeTriggerEvent`. The same page marks `{{doc_id}}` and `{{doc_url}}` as
+ * unavailable to the Consumption Started trigger, where no document row exists
+ * yet — `text()` below is what turns the value they arrive with into "absent".
  */
 export const WEBHOOK_PARAMS = {
 	docId: '{{doc_id}}',
@@ -49,9 +51,11 @@ export const WEBHOOK_PARAMS = {
 
 /**
  * Matched by Paperless before it calls out, so n8n is never woken for a document
- * the user does not care about. Storage path is absent on purpose: the trigger
- * model has no storage-path filter, and DRF drops an unknown key silently rather
- * than rejecting it, which would read as a filter that matches everything.
+ * the user does not care about. Storage path is absent on purpose: `WorkflowTrigger`
+ * in `src/documents/models.py` carries no storage-path filter, and a key a DRF
+ * serializer does not declare is dropped during validation rather than rejected
+ * (https://www.django-rest-framework.org/api-guide/serializers/#validation), so
+ * sending one would read as a filter that in fact matches everything.
  */
 export type TriggerFilters = {
 	tags?: number[];
@@ -72,8 +76,8 @@ export type TriggerSpec = {
 function triggerBody(event: PaperlessTriggerEvent, filters: TriggerFilters = {}) {
 	return {
 		type: TRIGGER_TYPE[event],
-		// Sent even when empty: Paperless treats a missing filter and a cleared one
-		// the same way, and an explicit value is what `matchesSpec` compares against.
+		// Sent even when empty, because an explicit value is what `matchesSpec`
+		// compares the workflow it later reads back against.
 		filter_has_tags: filters.tags ?? [],
 		filter_has_correspondent: filters.correspondent ?? null,
 		filter_has_document_type: filters.documentType ?? null,
@@ -138,8 +142,8 @@ export function matchesSpec(workflow: unknown, spec: TriggerSpec): boolean {
 		sameIds(trigger.filter_has_tags, expected.filter_has_tags) &&
 		(trigger.filter_has_correspondent ?? null) === expected.filter_has_correspondent &&
 		(trigger.filter_has_document_type ?? null) === expected.filter_has_document_type &&
-		// Paperless stores a cleared text filter as an empty string on some releases
-		// and as null on others; both mean "no filename filter".
+		// `WorkflowTrigger.filter_filename` in `src/documents/models.py` is a nullable
+		// CharField, so a cleared filter reads back as either `null` or `''`.
 		((trigger.filter_filename as string) || null) === expected.filter_filename
 	);
 }
@@ -192,11 +196,11 @@ export function normalizeTriggerEvent(payload: unknown): TriggerEventPayload {
 }
 
 /**
- * `Workflow.name` is unique in Paperless, and n8n runs the same lifecycle hooks
- * for the test webhook as for the production one — so a "Listen for test event"
- * next to an active trigger would collide on the name without the suffix. The
- * webhook ID keeps two copies of the node apart; it is truncated only to keep the
- * name readable in the Paperless UI.
+ * `Workflow.name` is declared unique in `src/documents/models.py`, and n8n runs
+ * the same lifecycle hooks for the test webhook as for the production one — so a
+ * "Listen for test event" next to an active trigger would collide on the name
+ * without the suffix. The webhook ID keeps two copies of the node apart; it is
+ * truncated only to keep the name readable in the Paperless UI.
  */
 export function workflowName(nodeName: string, webhookId: string, isTest: boolean): string {
 	return `n8n ${nodeName} (${webhookId.slice(0, 8)})${isTest ? ' [test]' : ''}`;
