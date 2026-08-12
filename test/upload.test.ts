@@ -80,6 +80,18 @@ describe('upload execute', () => {
 		expect(result[0].json).toEqual({ taskId: TASK_ID, status: 'pending' });
 	});
 
+	it('reads a stringified wait toggle as the boolean it means', async () => {
+		// An expression delivers `'false'`, which is truthy: read as-is the node
+		// would poll for the whole timeout with the wait switched off.
+		const fake = upload({ waitForConsumption: 'false' });
+		fake.http.mockResolvedValue(ok(TASK_ID));
+
+		const result = await run(fake);
+
+		expect(fake.http).toHaveBeenCalledTimes(1);
+		expect(result[0].json).toEqual({ taskId: TASK_ID, status: 'pending' });
+	});
+
 	it('polls the task and returns the document it produced', async () => {
 		const fake = upload();
 		fake.http
