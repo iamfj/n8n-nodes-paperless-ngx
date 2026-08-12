@@ -13,7 +13,9 @@ These are n8n's, not ours, and they outrank instinct:
 
 - **Resource first, then Operation.** A `Resource` options property, and one `Operation` property
   per resource, shown via `displayOptions: { show: { resource: ['document'] } }`.
-- **Every "Get Many" gets `Return All` and `Limit`.** `Limit` shows only when `Return All` is false.
+- **Every "Get Many" over a paginated endpoint gets `Return All` and `Limit`.** `Limit` shows only
+  when `Return All` is false. A few Paperless actions are unpaginated and answer with the whole
+  array — Document Notes is one — and there the pair has no page to cap.
 - **Return the items, not the envelope.** Paperless is Django REST Framework, so a list endpoint
   answers `{ results: [...], count: n }`. Return the contents of `results`.
 - camelCase property names. `required: true` on anything required.
